@@ -77,6 +77,42 @@ function skillBumpFor(ex) {
   return null;
 }
 
+function slugify(s) {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+// Splits an exercise's shortLabel ("Forehand Position, Straight, Early" /
+// "Straight, Early" / "Middle Position, Forehand Position") into its parts.
+function parseVariation(ex) {
+  const parts = (ex.shortLabel || "").split(", ");
+  if (parts[0] === "Middle Position") {
+    return { position: "Middle Position", direction: "Middle Position", variation: parts[1], rowLabel: parts[1] };
+  }
+  if (parts.length === 3) {
+    return { position: parts[0], direction: parts[1], variation: parts[2], rowLabel: `${parts[0]} — ${parts[2]}` };
+  }
+  return { position: null, direction: parts[0], variation: parts[1], rowLabel: parts[1] };
+}
+
+const DIRECTION_ORDER = ["Straight", "Cross", "Middle Position"];
+
+function getShotGroups() {
+  const map = new Map();
+  EXERCISES.forEach((ex) => {
+    if (!ex.shotGroup) return;
+    if (!map.has(ex.shotGroup)) map.set(ex.shotGroup, []);
+    map.get(ex.shotGroup).push(ex);
+  });
+  return [...map.entries()].map(([name, exercises]) => ({ name, slug: slugify(name), exercises }));
+}
+
+function getShotGroup(shotSlug) {
+  return getShotGroups().find((g) => g.slug === shotSlug);
+}
+
 function relativeDateLabel(dateISO) {
   const diff = daysBetween(dateISO, todayISO());
   if (diff === 0) return "Today";
@@ -99,6 +135,8 @@ function parseHash() {
   if (parts.length === 0) return { view: "overview" };
   if (parts[0] === "training" && parts[1] === "category") return { view: "category", id: parts[2] };
   if (parts[0] === "training" && parts[1] === "exercise") return { view: "exercise", id: parts[2] };
+  if (parts[0] === "training" && parts[1] === "shot" && parts[3]) return { view: "shotDirection", shot: parts[2], direction: parts[3] };
+  if (parts[0] === "training" && parts[1] === "shot") return { view: "shot", shot: parts[2] };
   if (parts[0] === "training") return { view: "training" };
   if (parts[0] === "settings") return { view: "settings" };
   return { view: "overview" };
@@ -122,6 +160,8 @@ function render() {
   if (route.view === "overview") screen.replaceChildren(renderOverview());
   else if (route.view === "training") screen.replaceChildren(renderTraining());
   else if (route.view === "category") screen.replaceChildren(renderCategoryPage(route.id));
+  else if (route.view === "shot") screen.replaceChildren(renderShotPage(route.shot));
+  else if (route.view === "shotDirection") screen.replaceChildren(renderShotDirectionPage(route.shot, route.direction));
   else if (route.view === "exercise") screen.replaceChildren(renderExercisePage(route.id));
   else if (route.view === "settings") screen.replaceChildren(renderSettings());
 
@@ -129,7 +169,7 @@ function render() {
 }
 
 function updateNavActive(view) {
-  const map = { overview: "overview", training: "training", category: "training", exercise: "training", settings: "settings" };
+  const map = { overview: "overview", training: "training", category: "training", shot: "training", shotDirection: "training", exercise: "training", settings: "settings" };
   document.querySelectorAll(".nav-item").forEach((btn) => {
     btn.classList.toggle("is-active", btn.dataset.nav === map[view]);
   });
@@ -360,51 +400,131 @@ function renderCategoryPage(categoryId) {
   `));
 
   const list = el(`<div class="exercise-list"></div>`);
-  const exercises = getExercisesForCategory(categoryId);
 
-  function exerciseRow(ex, label) {
+  if (categoryId === "technique") {
+    getShotGroups().forEach((group) => {
+      const doneCount = group.exercises.filter((e) => STATE.progress.completedExerciseIds.includes(e.id)).length;
+      const row = el(`
+        <button class="exercise-row">
+          <div class="exercise-row__main">
+            <div class="exercise-row__name">${group.name} ${doneCount === group.exercises.length ? '<span class="badge-done">✓ done</span>' : ""}</div>
+            <div class="exercise-row__meta">${group.exercises.length} variations · ${doneCount}/${group.exercises.length} done</div>
+          </div>
+          <div class="exercise-row__arrow">→</div>
+        </button>
+      `);
+      row.addEventListener("click", () => navigate(`/training/shot/${group.slug}`));
+      list.appendChild(row);
+    });
+  } else {
+    getExercisesForCategory(categoryId).forEach((ex) => {
+      const done = STATE.progress.completedExerciseIds.includes(ex.id);
+      const row = el(`
+        <button class="exercise-row">
+          <div class="exercise-row__main">
+            <div class="exercise-row__name">${ex.name} ${done ? '<span class="badge-done">✓ done</span>' : ""}</div>
+            <div class="exercise-row__meta">${stars(ex.difficulty)} · ${ex.workout.sets} sets × ${ex.workout.reps} reps</div>
+          </div>
+          <div class="exercise-row__arrow">→</div>
+        </button>
+      `);
+      row.addEventListener("click", () => navigate(`/training/exercise/${ex.id}`));
+      list.appendChild(row);
+    });
+  }
+  wrap.appendChild(list);
+
+  return wrap;
+}
+
+// ---------- Shot drill-down (Technique category) ----------
+
+function renderShotPage(shotSlug) {
+  const wrap = el(`<div class="view view--shot"></div>`);
+  const group = getShotGroup(shotSlug);
+  if (!group) {
+    wrap.appendChild(el(`<div class="empty-state">Technique not found.</div>`));
+    return wrap;
+  }
+
+  const back = el(`<button class="back-button">← Technique</button>`);
+  back.addEventListener("click", () => navigate("/training/category/technique"));
+  wrap.appendChild(back);
+
+  const cat = getCategory("technique");
+  const doneCount = group.exercises.filter((e) => STATE.progress.completedExerciseIds.includes(e.id)).length;
+  wrap.appendChild(el(`
+    <div class="category-banner" style="background:${cat.gradient}">
+      <div class="category-banner__emoji">${cat.emoji}</div>
+      <div class="category-banner__name">${group.name}</div>
+      <div class="category-banner__tagline">${group.exercises.length} variations · ${doneCount}/${group.exercises.length} done</div>
+    </div>
+  `));
+
+  const section = el(`<div class="section"><div class="section__title">Choose the direction</div></div>`);
+
+  const directions = [...new Set(group.exercises.map((e) => parseVariation(e).direction))].sort(
+    (a, b) => DIRECTION_ORDER.indexOf(a) - DIRECTION_ORDER.indexOf(b)
+  );
+
+  const directionGrid = el(`<div class="direction-grid"></div>`);
+  directions.forEach((direction) => {
+    const items = group.exercises.filter((e) => parseVariation(e).direction === direction);
+    const done = items.filter((e) => STATE.progress.completedExerciseIds.includes(e.id)).length;
+    const isMiddle = direction === "Middle Position";
+    const card = el(`
+      <button class="direction-card">
+        <div class="direction-card__icon">${isMiddle ? "⬤" : direction === "Straight" ? "↑" : "↗"}</div>
+        <div class="direction-card__name">${direction}</div>
+        <div class="direction-card__meta">${items.length} variations · ${done}/${items.length} done</div>
+      </button>
+    `);
+    card.addEventListener("click", () => navigate(`/training/shot/${shotSlug}/${slugify(direction)}`));
+    directionGrid.appendChild(card);
+  });
+  section.appendChild(directionGrid);
+  wrap.appendChild(section);
+
+  return wrap;
+}
+
+function renderShotDirectionPage(shotSlug, directionSlug) {
+  const wrap = el(`<div class="view view--shot-direction"></div>`);
+  const group = getShotGroup(shotSlug);
+  if (!group) {
+    wrap.appendChild(el(`<div class="empty-state">Technique not found.</div>`));
+    return wrap;
+  }
+  const items = group.exercises.filter((e) => slugify(parseVariation(e).direction) === directionSlug);
+  const directionName = items.length ? parseVariation(items[0]).direction : "";
+
+  const back = el(`<button class="back-button">← ${group.name}</button>`);
+  back.addEventListener("click", () => navigate(`/training/shot/${shotSlug}`));
+  wrap.appendChild(back);
+
+  wrap.appendChild(el(`
+    <div class="page-header">
+      <div class="page-header__title">${group.name}</div>
+      <div class="page-header__subtitle">${directionName}</div>
+    </div>
+  `));
+
+  const list = el(`<div class="exercise-list"></div>`);
+  items.forEach((ex) => {
     const done = STATE.progress.completedExerciseIds.includes(ex.id);
+    const { rowLabel } = parseVariation(ex);
     const row = el(`
       <button class="exercise-row">
         <div class="exercise-row__main">
-          <div class="exercise-row__name">${label} ${done ? '<span class="badge-done">✓ done</span>' : ""}</div>
+          <div class="exercise-row__name">${rowLabel} ${done ? '<span class="badge-done">✓ done</span>' : ""}</div>
           <div class="exercise-row__meta">${stars(ex.difficulty)} · ${ex.workout.sets} sets × ${ex.workout.reps} reps</div>
         </div>
         <div class="exercise-row__arrow">→</div>
       </button>
     `);
     row.addEventListener("click", () => navigate(`/training/exercise/${ex.id}`));
-    return row;
-  }
-
-  let i = 0;
-  while (i < exercises.length) {
-    const ex = exercises[i];
-    if (!ex.shotGroup) {
-      list.appendChild(exerciseRow(ex, ex.name));
-      i++;
-      continue;
-    }
-    const groupName = ex.shotGroup;
-    const groupItems = [];
-    while (i < exercises.length && exercises[i].shotGroup === groupName) {
-      groupItems.push(exercises[i]);
-      i++;
-    }
-    const doneCount = groupItems.filter((e) => STATE.progress.completedExerciseIds.includes(e.id)).length;
-    const group = el(`
-      <div class="shot-group">
-        <div class="shot-group__header">
-          <span class="shot-group__name">${groupName}</span>
-          <span class="shot-group__count">${doneCount}/${groupItems.length} done</span>
-        </div>
-      </div>
-    `);
-    const groupList = el(`<div class="shot-group__list"></div>`);
-    groupItems.forEach((item) => groupList.appendChild(exerciseRow(item, item.shortLabel)));
-    group.appendChild(groupList);
-    list.appendChild(group);
-  }
+    list.appendChild(row);
+  });
   wrap.appendChild(list);
 
   return wrap;
