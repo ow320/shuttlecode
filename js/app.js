@@ -244,6 +244,8 @@ function parseHash() {
   if (parts[0] === "training" && parts[1] === "session" && parts[2] === "builder") return { view: "sessionBuilder" };
   if (parts[0] === "training" && parts[1] === "session") return { view: "session", id: parts[2] };
   if (parts[0] === "training") return { view: "training" };
+  if (parts[0] === "history" && parts[1]) return { view: "historyDetail", id: parts[1] };
+  if (parts[0] === "history") return { view: "history" };
   if (parts[0] === "settings") return { view: "settings" };
   return { view: "overview" };
 }
@@ -271,6 +273,8 @@ function render() {
   else if (route.view === "exercise") screen.replaceChildren(renderExercisePage(route.id));
   else if (route.view === "sessionBuilder") screen.replaceChildren(renderSessionBuilder());
   else if (route.view === "session") screen.replaceChildren(renderSessionPage(route.id));
+  else if (route.view === "history") screen.replaceChildren(renderHistoryPage());
+  else if (route.view === "historyDetail") screen.replaceChildren(renderHistoryDetailPage(route.id));
   else if (route.view === "settings") screen.replaceChildren(renderSettings());
 
   updateNavActive(route.view);
@@ -286,6 +290,8 @@ function updateNavActive(view) {
     exercise: "training",
     sessionBuilder: "training",
     session: "training",
+    history: "overview",
+    historyDetail: "overview",
     settings: "settings",
   };
   document.querySelectorAll(".nav-item").forEach((btn) => {
@@ -328,18 +334,20 @@ function renderOverview() {
     wrap.appendChild(continueCard);
   }
 
-  wrap.appendChild(el(`
+  const statRow = el(`
     <div class="stat-row">
-      <div class="stat-card">
+      <button class="stat-card">
         <div class="stat-card__value">${p.sessionsCompleted}</div>
         <div class="stat-card__label">Sessions completed</div>
-      </div>
+      </button>
       <div class="stat-card stat-card--accent">
         <div class="stat-card__value">${p.streak}🔥</div>
         <div class="stat-card__label">Current streak</div>
       </div>
     </div>
-  `));
+  `);
+  statRow.querySelector(".stat-card").addEventListener("click", () => navigate("/history"));
+  wrap.appendChild(statRow);
 
   const calSection = el(`<div class="section"><div class="section__title">Training Calendar</div></div>`);
   const next = nextScheduledOccurrence();
@@ -374,36 +382,13 @@ function renderOverview() {
     recentSection.appendChild(el(`<div class="empty-state">No exercises completed yet. Start your first session below.</div>`));
   } else {
     const list = el(`<div class="activity-list"></div>`);
-    p.sessionHistory.slice(0, 5).forEach((rec) => {
-      const cat = getCategory(rec.categoryId) || { photo: "assets/categories/technique.jpg", gradient: "linear-gradient(135deg,#2b3350,#171b2b)" };
-      const card = el(`
-        <button class="activity-card">
-          <div class="activity-card__header">
-            <span class="activity-card__icon" style="background-image:url('${cat.photo}')"></span>
-            <div>
-              <div class="activity-card__title">${rec.exerciseName}</div>
-              <div class="activity-card__date">${relativeDateLabel(rec.dateISO)} · ${rec.timeLabel}</div>
-            </div>
-            ${rec.effort ? `<div class="activity-card__effort">${stars(rec.effort)}</div>` : ""}
-          </div>
-          <div class="activity-card__stats">
-            <span>⏱ ${formatMMSS(rec.durationSeconds)}</span>
-            ${
-              rec.mode === "session"
-                ? `<span>📋 ${rec.setsCompleted} exercise${rec.setsCompleted === 1 ? "" : "s"} done</span>`
-                : `<span>🔁 ${rec.setsCompleted} sets · ${
-                    rec.mode === "time" ? `${formatMMSS(rec.totalWorkSeconds || 0)} training` : `${rec.totalShuttles ?? rec.totalReps ?? "—"} shuttles`
-                  }</span>`
-            }
-            <span>🔥 ${rec.calories} cal</span>
-            ${rec.expGained != null ? `<span>✨ +${rec.expGained % 1 === 0 ? rec.expGained : rec.expGained.toFixed(1)} exp</span>` : ""}
-          </div>
-        </button>
-      `);
-      card.addEventListener("click", () => navigate(`/training/exercise/${rec.exerciseId}`));
-      list.appendChild(card);
-    });
+    p.sessionHistory.slice(0, 5).forEach((rec) => list.appendChild(activityCard(rec, () => navigate(`/history/${rec.id}`))));
     recentSection.appendChild(list);
+    if (p.sessionHistory.length > 5) {
+      const seeAll = el(`<button class="see-all-btn">See all training history →</button>`);
+      seeAll.addEventListener("click", () => navigate("/history"));
+      recentSection.appendChild(seeAll);
+    }
   }
   wrap.appendChild(recentSection);
 
@@ -427,6 +412,147 @@ function skillBar(label, exp) {
       <div class="skill-bar__track"><div class="skill-bar__fill" style="width:${pct}%"></div></div>
     </div>
   `);
+}
+
+function activityCard(rec, onClick) {
+  const cat = getCategory(rec.categoryId) || { photo: "assets/categories/technique.jpg" };
+  const card = el(`
+    <button class="activity-card">
+      <div class="activity-card__header">
+        <span class="activity-card__icon" style="background-image:url('${cat.photo}')"></span>
+        <div>
+          <div class="activity-card__title">${rec.exerciseName}</div>
+          <div class="activity-card__date">${relativeDateLabel(rec.dateISO)} · ${rec.timeLabel}</div>
+        </div>
+        ${rec.effort ? `<div class="activity-card__effort">${stars(rec.effort)}</div>` : ""}
+      </div>
+      <div class="activity-card__stats">
+        <span>⏱ ${formatMMSS(rec.durationSeconds)}</span>
+        ${
+          rec.mode === "session"
+            ? `<span>📋 ${rec.setsCompleted} exercise${rec.setsCompleted === 1 ? "" : "s"} done</span>`
+            : `<span>🔁 ${rec.setsCompleted} sets · ${
+                rec.mode === "time" ? `${formatMMSS(rec.totalWorkSeconds || 0)} training` : `${rec.totalShuttles ?? rec.totalReps ?? "—"} shuttles`
+              }</span>`
+        }
+        <span>🔥 ${rec.calories} cal</span>
+        ${rec.expGained != null ? `<span>✨ +${rec.expGained % 1 === 0 ? rec.expGained : rec.expGained.toFixed(1)} exp</span>` : ""}
+      </div>
+    </button>
+  `);
+  card.addEventListener("click", onClick);
+  return card;
+}
+
+// ---------- Training History ----------
+
+function renderHistoryPage() {
+  const wrap = el(`<div class="view view--history"></div>`);
+  const back = el(`<button class="back-button">← Overview</button>`);
+  back.addEventListener("click", () => navigate("/overview"));
+  wrap.appendChild(back);
+
+  const history = STATE.progress.sessionHistory;
+  wrap.appendChild(el(`
+    <div class="page-header">
+      <div class="page-header__title">Training History</div>
+      <div class="page-header__subtitle">${history.length} session${history.length === 1 ? "" : "s"} logged</div>
+    </div>
+  `));
+
+  if (history.length === 0) {
+    wrap.appendChild(el(`<div class="empty-state">No training sessions logged yet. Complete a drill or technique to see it here.</div>`));
+    return wrap;
+  }
+
+  const list = el(`<div class="activity-list"></div>`);
+  history.forEach((rec) => list.appendChild(activityCard(rec, () => navigate(`/history/${rec.id}`))));
+  wrap.appendChild(list);
+
+  return wrap;
+}
+
+function renderHistoryDetailPage(entryId) {
+  const wrap = el(`<div class="view view--history-detail"></div>`);
+  const rec = STATE.progress.sessionHistory.find((r) => r.id === entryId);
+  if (!rec) {
+    wrap.appendChild(el(`<div class="empty-state">Session not found.</div>`));
+    return wrap;
+  }
+
+  const back = el(`<button class="back-button">← Training History</button>`);
+  back.addEventListener("click", () => navigate("/history"));
+  wrap.appendChild(back);
+
+  const cat = getCategory(rec.categoryId) || { photo: "assets/categories/technique.jpg", name: "Training" };
+  const dateLabel = new Date(rec.dateISO + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  wrap.appendChild(el(`
+    <div class="category-banner" style="background-image:linear-gradient(to top, rgba(6,8,12,0.92), rgba(6,8,12,0.1) 65%), url('${cat.photo}')">
+      <div class="category-banner__name">${rec.exerciseName}</div>
+      <div class="category-banner__tagline">${dateLabel} · ${rec.timeLabel}</div>
+    </div>
+  `));
+
+  const grid = el(`<div class="summary-grid"></div>`);
+  grid.appendChild(el(`
+    <div class="summary-stat">
+      <div class="summary-stat__value">${formatMMSS(rec.durationSeconds)}</div>
+      <div class="summary-stat__label">Duration</div>
+    </div>
+  `));
+  grid.appendChild(el(`
+    <div class="summary-stat">
+      <div class="summary-stat__value">${rec.setsCompleted}</div>
+      <div class="summary-stat__label">${rec.mode === "session" ? "Exercises" : "Sets"}</div>
+    </div>
+  `));
+  if (rec.mode === "time" || rec.mode === "session") {
+    grid.appendChild(el(`
+      <div class="summary-stat">
+        <div class="summary-stat__value">${formatMMSS(rec.totalWorkSeconds || 0)}</div>
+        <div class="summary-stat__label">${rec.mode === "session" ? "Session Time" : "Training Time"}</div>
+      </div>
+    `));
+  } else {
+    grid.appendChild(el(`
+      <div class="summary-stat">
+        <div class="summary-stat__value">${rec.totalShuttles ?? rec.totalReps ?? "—"}</div>
+        <div class="summary-stat__label">Shuttles</div>
+      </div>
+    `));
+  }
+  grid.appendChild(el(`
+    <div class="summary-stat">
+      <div class="summary-stat__value">${rec.calories}</div>
+      <div class="summary-stat__label">Est. calories</div>
+    </div>
+  `));
+  wrap.appendChild(grid);
+
+  if (rec.expGained != null) {
+    wrap.appendChild(el(`<div class="exp-pill">✨ +${rec.expGained % 1 === 0 ? rec.expGained : rec.expGained.toFixed(1)} exp</div>`));
+  }
+
+  if (rec.effort) {
+    wrap.appendChild(el(`
+      <div class="info-block">
+        <div class="info-block__title">How it felt</div>
+        <div class="info-block__text">${stars(rec.effort)}</div>
+      </div>
+    `));
+  }
+
+  if (rec.exerciseId && getExercise(rec.exerciseId)) {
+    const exBtn = el(`<button class="start-btn">View Exercise</button>`);
+    exBtn.addEventListener("click", () => navigate(`/training/exercise/${rec.exerciseId}`));
+    wrap.appendChild(exBtn);
+  } else if (rec.sessionId && STATE.progress.trainingSessions.some((s) => s.id === rec.sessionId)) {
+    const sessBtn = el(`<button class="start-btn">View Training Session</button>`);
+    sessBtn.addEventListener("click", () => navigate(`/training/session/${rec.sessionId}`));
+    wrap.appendChild(sessBtn);
+  }
+
+  return wrap;
 }
 
 // ---------- Calendar ----------
@@ -1127,6 +1253,7 @@ function endSession(sessionId) {
     s.progress.sessionHistory.unshift({
       id: `${Date.now()}`,
       exerciseId: null,
+      sessionId: session.id,
       exerciseName: `${session.name} (Training Session)`,
       categoryId: "sessions",
       dateISO: today,
@@ -1139,7 +1266,7 @@ function endSession(sessionId) {
       calories: Math.round((elapsedSeconds / 60) * getCategory("sessions").calPerMin),
       effort: 0,
     });
-    s.progress.sessionHistory = s.progress.sessionHistory.slice(0, 30);
+    s.progress.sessionHistory = s.progress.sessionHistory.slice(0, 300);
     s.progress.activeSessionRun = null;
   });
   paintSessionBanner();
@@ -1545,7 +1672,7 @@ function finishWorkout(ctx) {
         calories,
         effort: localRating,
       });
-      s.progress.sessionHistory = s.progress.sessionHistory.slice(0, 30);
+      s.progress.sessionHistory = s.progress.sessionHistory.slice(0, 300);
       s.progress.notes[ctx.ex.id] = notes;
       if (localRating) s.progress.difficultyRatings[ctx.ex.id] = localRating;
       s.progress.lastExerciseId = ctx.ex.id;
