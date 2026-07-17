@@ -259,7 +259,7 @@ function renderOverview() {
           </div>
           <div class="activity-card__stats">
             <span>⏱ ${formatMMSS(rec.durationSeconds)}</span>
-            <span>🔁 ${rec.setsCompleted} sets · ${rec.totalReps} reps</span>
+            <span>🔁 ${rec.setsCompleted} sets · ${rec.totalShuttles ?? rec.totalReps ?? "—"} shuttles</span>
             <span>🔥 ${rec.calories} cal</span>
           </div>
         </button>
@@ -280,13 +280,15 @@ function renderOverview() {
   return wrap;
 }
 
-function skillBar(label, percent) {
-  const pct = Math.max(0, Math.min(100, percent));
+function skillBar(label, exp) {
+  const safeExp = Math.max(0, exp || 0);
+  const level = Math.floor(safeExp / 100) + 1;
+  const pct = safeExp % 100;
   return el(`
     <div class="skill-bar">
       <div class="skill-bar__top">
         <span>${label}</span>
-        <span class="skill-bar__pct">+${percent}%</span>
+        <span class="skill-bar__pct">Lv ${level} · ${pct}%</span>
       </div>
       <div class="skill-bar__track"><div class="skill-bar__fill" style="width:${pct}%"></div></div>
     </div>
@@ -382,7 +384,7 @@ function exerciseCard(ex) {
       </div>
       <div class="exercise-card__body">
         <div class="exercise-card__name">${ex.name}</div>
-        <div class="exercise-card__meta">${stars(ex.difficulty)} · ${ex.workout.sets}×${ex.workout.reps}</div>
+        <div class="exercise-card__meta">${stars(ex.difficulty)} · ${ex.workout.sets}×${ex.workout.shuttles}</div>
       </div>
     </button>
   `);
@@ -434,7 +436,7 @@ function renderCategoryPage(categoryId) {
         <button class="exercise-row">
           <div class="exercise-row__main">
             <div class="exercise-row__name">${ex.name} ${done ? '<span class="badge-done">✓ done</span>' : ""}</div>
-            <div class="exercise-row__meta">${stars(ex.difficulty)} · ${ex.workout.sets} sets × ${ex.workout.reps} reps</div>
+            <div class="exercise-row__meta">${stars(ex.difficulty)} · ${ex.workout.sets} sets × ${ex.workout.shuttles} shuttles</div>
           </div>
           <div class="exercise-row__arrow">→</div>
         </button>
@@ -528,7 +530,7 @@ function renderShotDirectionPage(shotSlug, directionSlug) {
       <button class="exercise-row">
         <div class="exercise-row__main">
           <div class="exercise-row__name">${rowLabel} ${done ? '<span class="badge-done">✓ done</span>' : ""}</div>
-          <div class="exercise-row__meta">${stars(ex.difficulty)} · ${ex.workout.sets} sets × ${ex.workout.reps} reps</div>
+          <div class="exercise-row__meta">${stars(ex.difficulty)} · ${ex.workout.sets} sets × ${ex.workout.shuttles} shuttles</div>
         </div>
         <div class="exercise-row__arrow">→</div>
       </button>
@@ -615,7 +617,7 @@ function renderExercisePage(exerciseId) {
       <div class="workout-box__title">Workout</div>
       <div class="workout-box__stats">
         <div class="workout-stat"><div class="workout-stat__value">${ex.workout.sets}</div><div class="workout-stat__label">sets</div></div>
-        <div class="workout-stat"><div class="workout-stat__value">${ex.workout.reps}</div><div class="workout-stat__label">reps</div></div>
+        <div class="workout-stat"><div class="workout-stat__value">${ex.workout.shuttles}</div><div class="workout-stat__label">shuttles</div></div>
         <div class="workout-stat"><div class="workout-stat__value">${ex.workout.restSeconds}s</div><div class="workout-stat__label">rest</div></div>
       </div>
       <button class="start-btn" id="start-training-btn">Start Training</button>
@@ -687,15 +689,15 @@ function openTimer(ex) {
   const overlay = document.getElementById("timer-overlay");
   overlay.classList.add("is-open");
 
-  const workDuration = Math.max(20, Math.min(90, ex.workout.reps * 3));
+  const workDuration = Math.max(20, Math.min(90, ex.workout.shuttles * 3));
   const timerCtx = {
     ex,
     set: 1,
     totalSets: ex.workout.sets,
     phase: "work",
-    reps: 0,
-    totalRepsCompleted: 0,
-    targetReps: ex.workout.reps,
+    shuttles: 0,
+    totalShuttlesHit: 0,
+    targetShuttles: ex.workout.shuttles,
     remaining: workDuration,
     workDuration,
     restDuration: ex.workout.restSeconds,
@@ -719,7 +721,7 @@ function tickTimer(ctx) {
   ctx.remaining -= 1;
   if (ctx.remaining <= 0) {
     if (ctx.phase === "work") {
-      ctx.totalRepsCompleted += ctx.reps;
+      ctx.totalShuttlesHit += ctx.shuttles;
       if (ctx.set >= ctx.totalSets) {
         ctx.phase = "done";
         clearInterval(timerHandle);
@@ -732,7 +734,7 @@ function tickTimer(ctx) {
       ctx.set += 1;
       ctx.phase = "work";
       ctx.remaining = ctx.workDuration;
-      ctx.reps = 0;
+      ctx.shuttles = 0;
     }
   }
   renderTimer(ctx);
@@ -750,9 +752,9 @@ function renderTimer(ctx) {
       ${
         ctx.phase === "work"
           ? `<div class="timer-reps">
-               <button class="rep-btn" id="rep-minus">−</button>
-               <div class="timer-reps__value">${ctx.reps} <span>/ ${ctx.targetReps} reps</span></div>
-               <button class="rep-btn" id="rep-plus">+</button>
+               <button class="rep-btn" id="shuttle-minus">−</button>
+               <div class="timer-reps__value">${ctx.shuttles} <span>/ ${ctx.targetShuttles} shuttles</span></div>
+               <button class="rep-btn" id="shuttle-plus">+</button>
              </div>`
           : `<div class="timer-rest-note">Rest up — next: Set ${ctx.set + 1}</div>`
       }
@@ -764,12 +766,12 @@ function renderTimer(ctx) {
   `));
 
   if (ctx.phase === "work") {
-    body.querySelector("#rep-minus").addEventListener("click", () => {
-      ctx.reps = Math.max(0, ctx.reps - 1);
+    body.querySelector("#shuttle-minus").addEventListener("click", () => {
+      ctx.shuttles = Math.max(0, ctx.shuttles - 1);
       renderTimer(ctx);
     });
-    body.querySelector("#rep-plus").addEventListener("click", () => {
-      ctx.reps = Math.min(ctx.targetReps, ctx.reps + 1);
+    body.querySelector("#shuttle-plus").addEventListener("click", () => {
+      ctx.shuttles = Math.min(ctx.targetShuttles, ctx.shuttles + 1);
       renderTimer(ctx);
     });
   }
@@ -807,8 +809,8 @@ function finishWorkout(ctx) {
           <div class="summary-stat__label">Sets</div>
         </div>
         <div class="summary-stat">
-          <div class="summary-stat__value">${ctx.totalRepsCompleted}</div>
-          <div class="summary-stat__label">Reps</div>
+          <div class="summary-stat__value">${ctx.totalShuttlesHit}</div>
+          <div class="summary-stat__label">Shuttles</div>
         </div>
         <div class="summary-stat">
           <div class="summary-stat__value">${calories}</div>
@@ -858,7 +860,7 @@ function finishWorkout(ctx) {
         timeLabel: new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }),
         durationSeconds,
         setsCompleted: ctx.totalSets,
-        totalReps: ctx.totalRepsCompleted,
+        totalShuttles: ctx.totalShuttlesHit,
         calories,
         effort: localRating,
       });
@@ -867,8 +869,9 @@ function finishWorkout(ctx) {
       if (localRating) s.progress.difficultyRatings[ctx.ex.id] = localRating;
       s.progress.lastExerciseId = ctx.ex.id;
 
+      // Each shuttle hit is worth 1% exp toward the relevant stat; levels stack indefinitely.
       const bump = skillBumpFor(ctx.ex);
-      if (bump) s.progress.skills[bump] = Math.min(100, s.progress.skills[bump] + 1);
+      if (bump) s.progress.skills[bump] = (s.progress.skills[bump] || 0) + ctx.totalShuttlesHit;
     });
     closeTimer();
     toast("Nice work! Session saved.");

@@ -54,7 +54,7 @@ const EXERCISES = [
       "Practice switching forehand to backhand grip",
     ],
     commonMistakes: ["Squeezing the handle too tightly", "Using a frying-pan (flat) grip", "Fixed grip that never adjusts"],
-    workout: { sets: 3, reps: 20, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   // Shuttle Code — fundamentals
   // Forehand Clear
@@ -78,7 +78,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-clear-forehand-position-straight-neutral",
@@ -100,7 +100,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-clear-forehand-position-straight-late",
@@ -122,7 +122,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-clear-forehand-position-cross-early",
@@ -144,7 +144,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-clear-forehand-position-cross-neutral",
@@ -166,7 +166,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-clear-forehand-position-cross-late",
@@ -188,7 +188,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-clear-middle-position-forehand-position",
@@ -210,7 +210,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-clear-middle-position-around-the-head-position",
@@ -232,7 +232,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-clear-around-the-head-position-straight-early",
@@ -254,7 +254,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-clear-around-the-head-position-straight-neutral",
@@ -276,7 +276,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-clear-around-the-head-position-straight-late",
@@ -298,7 +298,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-clear-around-the-head-position-cross-early",
@@ -320,7 +320,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-clear-around-the-head-position-cross-neutral",
@@ -342,7 +342,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-clear-around-the-head-position-cross-late",
@@ -364,7 +364,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   // Backhand Clear
   {
@@ -387,7 +387,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-clear-straight-neutral",
@@ -409,7 +409,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-clear-straight-late",
@@ -431,7 +431,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-clear-cross-early",
@@ -453,7 +453,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-clear-cross-neutral",
@@ -475,7 +475,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-clear-cross-late",
@@ -497,7 +497,7 @@ const EXERCISES = [
       "Telegraphing direction before contact",
       "Slow recovery after the shot",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "serve-fundamentals",
@@ -513,7 +513,7 @@ const EXERCISES = [
       "Use full arm extension for high serves",
     ],
     commonMistakes: ["Contact point too high (fault)", "Telegraphing serve direction", "Inconsistent shuttle toss"],
-    workout: { sets: 4, reps: 10, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "ready-position",
@@ -529,7 +529,7 @@ const EXERCISES = [
       "Return to center after every shot",
     ],
     commonMistakes: ["Standing flat-footed", "Racket resting too low", "Drifting away from center"],
-    workout: { sets: 3, reps: 10, restSeconds: 20 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "basic-footwork",
@@ -545,7 +545,7 @@ const EXERCISES = [
       "Return to base after each movement",
     ],
     commonMistakes: ["Crossing feet on direction changes", "Overstriding", "Standing upright while moving"],
-    workout: { sets: 4, reps: 8, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   // Shuttle Code — offensive
   // Forehand Drop Shot
@@ -569,7 +569,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-drop-shot-forehand-position-straight-basic",
@@ -591,7 +591,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-drop-shot-forehand-position-straight-reverse",
@@ -613,7 +613,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-drop-shot-forehand-position-cross-slice",
@@ -635,7 +635,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-drop-shot-forehand-position-cross-basic",
@@ -657,7 +657,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-drop-shot-middle-position-forehand-position",
@@ -679,7 +679,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-drop-shot-middle-position-around-the-head-position",
@@ -701,7 +701,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-drop-shot-around-the-head-position-straight-slice",
@@ -723,7 +723,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-drop-shot-around-the-head-position-straight-basic",
@@ -745,7 +745,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-drop-shot-around-the-head-position-straight-reverse",
@@ -767,7 +767,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-drop-shot-around-the-head-position-cross-slice",
@@ -789,7 +789,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-drop-shot-around-the-head-position-cross-basic",
@@ -811,7 +811,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   // Forehand Smash
   {
@@ -834,7 +834,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-smash-forehand-position-straight-half-smash",
@@ -856,7 +856,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-smash-forehand-position-straight-stick-smash",
@@ -878,7 +878,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-smash-forehand-position-cross-full-smash",
@@ -900,7 +900,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-smash-forehand-position-cross-half-smash",
@@ -922,7 +922,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-smash-forehand-position-cross-stick-smash",
@@ -944,7 +944,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-smash-middle-position-forehand-position",
@@ -966,7 +966,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-smash-middle-position-around-the-head-position",
@@ -988,7 +988,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-smash-around-the-head-position-straight-full-smash",
@@ -1010,7 +1010,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-smash-around-the-head-position-straight-half-smash",
@@ -1032,7 +1032,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-smash-around-the-head-position-straight-stick-smash",
@@ -1054,7 +1054,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-smash-around-the-head-position-cross-full-smash",
@@ -1076,7 +1076,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-smash-around-the-head-position-cross-half-smash",
@@ -1098,7 +1098,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-smash-around-the-head-position-cross-stick-smash",
@@ -1120,7 +1120,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   // Backhand Drop Shot
   {
@@ -1143,7 +1143,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-drop-shot-straight-basic",
@@ -1165,7 +1165,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-drop-shot-straight-reverse",
@@ -1187,7 +1187,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-drop-shot-cross-slice",
@@ -1209,7 +1209,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-drop-shot-cross-basic",
@@ -1231,7 +1231,7 @@ const EXERCISES = [
       "Too much pace, landing mid-court instead of tight",
       "Poor disguise from the same base motion",
     ],
-    workout: { sets: 3, reps: 12, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   // Backhand Smash
   {
@@ -1254,7 +1254,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-smash-straight-low-drive",
@@ -1276,7 +1276,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-smash-cross-high",
@@ -1298,7 +1298,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-smash-cross-low-drive",
@@ -1320,7 +1320,7 @@ const EXERCISES = [
       "Contacting the shuttle too low or too far in front",
       "Poor recovery position after the smash",
     ],
-    workout: { sets: 3, reps: 10, restSeconds: 55 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   // Forehand Drive
   {
@@ -1343,7 +1343,7 @@ const EXERCISES = [
       "Hitting upward instead of flat",
       "Standing flat-footed during rallies",
     ],
-    workout: { sets: 4, reps: 15, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-drive-straight-neutral",
@@ -1365,7 +1365,7 @@ const EXERCISES = [
       "Hitting upward instead of flat",
       "Standing flat-footed during rallies",
     ],
-    workout: { sets: 4, reps: 15, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-drive-straight-defensive",
@@ -1387,7 +1387,7 @@ const EXERCISES = [
       "Hitting upward instead of flat",
       "Standing flat-footed during rallies",
     ],
-    workout: { sets: 4, reps: 15, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-drive-cross-offensive",
@@ -1409,7 +1409,7 @@ const EXERCISES = [
       "Hitting upward instead of flat",
       "Standing flat-footed during rallies",
     ],
-    workout: { sets: 4, reps: 15, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-drive-cross-neutral",
@@ -1431,7 +1431,7 @@ const EXERCISES = [
       "Hitting upward instead of flat",
       "Standing flat-footed during rallies",
     ],
-    workout: { sets: 4, reps: 15, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-drive-cross-defensive",
@@ -1453,7 +1453,7 @@ const EXERCISES = [
       "Hitting upward instead of flat",
       "Standing flat-footed during rallies",
     ],
-    workout: { sets: 4, reps: 15, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   // Backhand Drive
   {
@@ -1476,7 +1476,7 @@ const EXERCISES = [
       "Hitting upward instead of flat",
       "Standing flat-footed during rallies",
     ],
-    workout: { sets: 4, reps: 15, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-drive-straight-neutral",
@@ -1498,7 +1498,7 @@ const EXERCISES = [
       "Hitting upward instead of flat",
       "Standing flat-footed during rallies",
     ],
-    workout: { sets: 4, reps: 15, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-drive-straight-defensive",
@@ -1520,7 +1520,7 @@ const EXERCISES = [
       "Hitting upward instead of flat",
       "Standing flat-footed during rallies",
     ],
-    workout: { sets: 4, reps: 15, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-drive-cross-offensive",
@@ -1542,7 +1542,7 @@ const EXERCISES = [
       "Hitting upward instead of flat",
       "Standing flat-footed during rallies",
     ],
-    workout: { sets: 4, reps: 15, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-drive-cross-neutral",
@@ -1564,7 +1564,7 @@ const EXERCISES = [
       "Hitting upward instead of flat",
       "Standing flat-footed during rallies",
     ],
-    workout: { sets: 4, reps: 15, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-drive-cross-defensive",
@@ -1586,7 +1586,7 @@ const EXERCISES = [
       "Hitting upward instead of flat",
       "Standing flat-footed during rallies",
     ],
-    workout: { sets: 4, reps: 15, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "fast-interceptions",
@@ -1602,7 +1602,7 @@ const EXERCISES = [
       "Punch, don't swing, on interceptions",
     ],
     commonMistakes: ["Reacting instead of anticipating", "Racket held too low", "Full swing instead of a short punch"],
-    workout: { sets: 3, reps: 12, restSeconds: 45 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "attack-positioning",
@@ -1618,7 +1618,7 @@ const EXERCISES = [
       "Stay balanced, not overcommitted",
     ],
     commonMistakes: ["Standing flat-footed after attacking", "Overcommitting to one side", "Not following the shot forward"],
-    workout: { sets: 3, reps: 10, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   // Shuttle Code — defensive
   // Forehand Defence
@@ -1642,7 +1642,7 @@ const EXERCISES = [
       "Guessing direction too early",
       "Overswinging under pressure",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-defence-straight-neutral",
@@ -1664,7 +1664,7 @@ const EXERCISES = [
       "Guessing direction too early",
       "Overswinging under pressure",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-defence-straight-late",
@@ -1686,7 +1686,7 @@ const EXERCISES = [
       "Guessing direction too early",
       "Overswinging under pressure",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-defence-cross-early",
@@ -1708,7 +1708,7 @@ const EXERCISES = [
       "Guessing direction too early",
       "Overswinging under pressure",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-defence-cross-neutral",
@@ -1730,7 +1730,7 @@ const EXERCISES = [
       "Guessing direction too early",
       "Overswinging under pressure",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-defence-cross-late",
@@ -1752,7 +1752,7 @@ const EXERCISES = [
       "Guessing direction too early",
       "Overswinging under pressure",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   // Backhand Defence
   {
@@ -1775,7 +1775,7 @@ const EXERCISES = [
       "Guessing direction too early",
       "Overswinging under pressure",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-defence-straight-neutral",
@@ -1797,7 +1797,7 @@ const EXERCISES = [
       "Guessing direction too early",
       "Overswinging under pressure",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-defence-straight-late",
@@ -1819,7 +1819,7 @@ const EXERCISES = [
       "Guessing direction too early",
       "Overswinging under pressure",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-defence-cross-early",
@@ -1841,7 +1841,7 @@ const EXERCISES = [
       "Guessing direction too early",
       "Overswinging under pressure",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-defence-cross-neutral",
@@ -1863,7 +1863,7 @@ const EXERCISES = [
       "Guessing direction too early",
       "Overswinging under pressure",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-defence-cross-late",
@@ -1885,7 +1885,7 @@ const EXERCISES = [
       "Guessing direction too early",
       "Overswinging under pressure",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   // Forehand Lift
   {
@@ -1908,7 +1908,7 @@ const EXERCISES = [
       "Shuttle falling short of the back court",
       "Slow recovery after the lift",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-lift-straight-neutral",
@@ -1930,7 +1930,7 @@ const EXERCISES = [
       "Shuttle falling short of the back court",
       "Slow recovery after the lift",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-lift-straight-late",
@@ -1952,7 +1952,7 @@ const EXERCISES = [
       "Shuttle falling short of the back court",
       "Slow recovery after the lift",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-lift-cross-early",
@@ -1974,7 +1974,7 @@ const EXERCISES = [
       "Shuttle falling short of the back court",
       "Slow recovery after the lift",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-lift-cross-neutral",
@@ -1996,7 +1996,7 @@ const EXERCISES = [
       "Shuttle falling short of the back court",
       "Slow recovery after the lift",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-lift-cross-late",
@@ -2018,7 +2018,7 @@ const EXERCISES = [
       "Shuttle falling short of the back court",
       "Slow recovery after the lift",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   // Backhand Lift
   {
@@ -2041,7 +2041,7 @@ const EXERCISES = [
       "Shuttle falling short of the back court",
       "Slow recovery after the lift",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-lift-straight-neutral",
@@ -2063,7 +2063,7 @@ const EXERCISES = [
       "Shuttle falling short of the back court",
       "Slow recovery after the lift",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-lift-straight-late",
@@ -2085,7 +2085,7 @@ const EXERCISES = [
       "Shuttle falling short of the back court",
       "Slow recovery after the lift",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-lift-cross-early",
@@ -2107,7 +2107,7 @@ const EXERCISES = [
       "Shuttle falling short of the back court",
       "Slow recovery after the lift",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-lift-cross-neutral",
@@ -2129,7 +2129,7 @@ const EXERCISES = [
       "Shuttle falling short of the back court",
       "Slow recovery after the lift",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-lift-cross-late",
@@ -2151,7 +2151,7 @@ const EXERCISES = [
       "Shuttle falling short of the back court",
       "Slow recovery after the lift",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "counter-attacking",
@@ -2167,7 +2167,7 @@ const EXERCISES = [
       "Stay balanced to transition quickly",
     ],
     commonMistakes: ["Purely passive defending", "Slow transition back to attack", "Losing balance while defending"],
-    workout: { sets: 3, reps: 10, restSeconds: 45 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
 
   // Footwork & Movement
@@ -2185,7 +2185,7 @@ const EXERCISES = [
       "Sprint back to center every time",
     ],
     commonMistakes: ["Jogging instead of explosive steps", "Skipping the return to base", "Wrong footwork pattern for the corner"],
-    workout: { sets: 4, reps: 6, restSeconds: 45 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "split-step-training",
@@ -2201,7 +2201,7 @@ const EXERCISES = [
       "Push off immediately in the needed direction",
     ],
     commonMistakes: ["Split-stepping too early or late", "Landing flat-footed and stiff", "Jumping too high, losing reaction time"],
-    workout: { sets: 4, reps: 12, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "explosive-movement",
@@ -2217,7 +2217,7 @@ const EXERCISES = [
       "Reset fully between reps for quality",
     ],
     commonMistakes: ["Standing too tall on the first step", "Long first stride instead of short and fast", "Rushing reps without full recovery"],
-    workout: { sets: 5, reps: 8, restSeconds: 40 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "recovery-positioning",
@@ -2233,7 +2233,7 @@ const EXERCISES = [
       "Reset racket to ready position while moving",
     ],
     commonMistakes: ["Pausing to admire the shot", "Turning your back on the court while recovering", "Arriving off-balance"],
-    workout: { sets: 4, reps: 10, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "direction-change",
@@ -2249,7 +2249,7 @@ const EXERCISES = [
       "Accelerate immediately out of the change",
     ],
     commonMistakes: ["Standing too upright through the cut", "Crossing feet during the change", "Losing speed on the exit"],
-    workout: { sets: 4, reps: 10, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
 
   // Net Play
@@ -2267,7 +2267,7 @@ const EXERCISES = [
       "Stay balanced on the approach",
     ],
     commonMistakes: ["Waiting too long and letting the shuttle drop", "Overswinging into the net", "Hitting flat instead of steep"],
-    workout: { sets: 3, reps: 15, restSeconds: 35 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   // Shuttle Code — netplay
   // Forehand Net Shot
@@ -2291,7 +2291,7 @@ const EXERCISES = [
       "Overswinging at the net",
       "Telegraphing the shot before contact",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-net-shot-straight-basic",
@@ -2313,7 +2313,7 @@ const EXERCISES = [
       "Overswinging at the net",
       "Telegraphing the shot before contact",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-net-shot-straight-in-to-out-spin",
@@ -2335,7 +2335,7 @@ const EXERCISES = [
       "Overswinging at the net",
       "Telegraphing the shot before contact",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-net-shot-cross-early",
@@ -2357,7 +2357,7 @@ const EXERCISES = [
       "Overswinging at the net",
       "Telegraphing the shot before contact",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-net-shot-cross-neutral",
@@ -2379,7 +2379,7 @@ const EXERCISES = [
       "Overswinging at the net",
       "Telegraphing the shot before contact",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "forehand-net-shot-cross-late",
@@ -2401,7 +2401,7 @@ const EXERCISES = [
       "Overswinging at the net",
       "Telegraphing the shot before contact",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   // Backhand Net Shot
   {
@@ -2424,7 +2424,7 @@ const EXERCISES = [
       "Overswinging at the net",
       "Telegraphing the shot before contact",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-net-shot-straight-basic",
@@ -2446,7 +2446,7 @@ const EXERCISES = [
       "Overswinging at the net",
       "Telegraphing the shot before contact",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-net-shot-straight-in-to-out-spin",
@@ -2468,7 +2468,7 @@ const EXERCISES = [
       "Overswinging at the net",
       "Telegraphing the shot before contact",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-net-shot-cross-early",
@@ -2490,7 +2490,7 @@ const EXERCISES = [
       "Overswinging at the net",
       "Telegraphing the shot before contact",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-net-shot-cross-neutral",
@@ -2512,7 +2512,7 @@ const EXERCISES = [
       "Overswinging at the net",
       "Telegraphing the shot before contact",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "backhand-net-shot-cross-late",
@@ -2534,7 +2534,7 @@ const EXERCISES = [
       "Overswinging at the net",
       "Telegraphing the shot before contact",
     ],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "net-recovery",
@@ -2550,7 +2550,7 @@ const EXERCISES = [
       "Return to base facing the court",
     ],
     commonMistakes: ["Overextending the lunge", "Standing up slowly after the shot", "Turning away from the court while recovering"],
-    workout: { sets: 4, reps: 10, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
 
   // Strength & Conditioning
@@ -2568,7 +2568,7 @@ const EXERCISES = [
       "Prioritize quality over quantity of reps",
     ],
     commonMistakes: ["Landing stiff-legged", "Rushing through reps", "Skipping the warm-up before explosive work"],
-    workout: { sets: 4, reps: 12, restSeconds: 60 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "core-stability",
@@ -2584,7 +2584,7 @@ const EXERCISES = [
       "Move with control, not momentum",
     ],
     commonMistakes: ["Arching the lower back", "Rushing through reps with momentum", "Holding breath during isometric holds"],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "shoulder-strengthening",
@@ -2600,7 +2600,7 @@ const EXERCISES = [
       "Stop if you feel joint pain, not just fatigue",
     ],
     commonMistakes: ["Using too much resistance too soon", "Shrugging shoulders during presses", "Rushing the tempo"],
-    workout: { sets: 3, reps: 15, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "agility-drills",
@@ -2616,7 +2616,7 @@ const EXERCISES = [
       "Increase speed only once the pattern is clean",
     ],
     commonMistakes: ["Rushing before the pattern is clean", "Looking down at the feet", "Heavy, flat-footed steps"],
-    workout: { sets: 4, reps: 10, restSeconds: 30 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
   {
     id: "endurance-workouts",
@@ -2632,7 +2632,7 @@ const EXERCISES = [
       "Build volume gradually week to week",
     ],
     commonMistakes: ["Going too hard too early in a session", "Inconsistent rest periods", "Ignoring recovery and hydration"],
-    workout: { sets: 5, reps: 1, restSeconds: 60 },
+    workout: { sets: 5, shuttles: 15, restSeconds: 60 },
   },
 ];
 
