@@ -69,6 +69,7 @@ function defaultState() {
       language: "English",
       videoQuality: "Auto",
       defaultMode: "player", // player | coach — which Overview view the app opens to
+      showStats: true, // whether the Stats section appears on the player Overview page
     },
     progress: {
       sessionsCompleted: 12,

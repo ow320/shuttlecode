@@ -575,13 +575,15 @@ function renderOverview() {
   calSection.appendChild(renderCalendarWidget());
   wrap.appendChild(calSection);
 
-  const skillsSection = el(`<div class="section"><div class="section__title">Stats</div></div>`);
-  skillsSection.appendChild(skillBar("Control", p.skills.control));
-  skillsSection.appendChild(skillBar("Power", p.skills.power));
-  skillsSection.appendChild(skillBar("Footwork", p.skills.footwork));
-  skillsSection.appendChild(skillBar("Net Game", p.skills.netGame));
-  skillsSection.appendChild(skillBar("Speed", p.skills.speed));
-  wrap.appendChild(skillsSection);
+  if (STATE.appSettings.showStats !== false) {
+    const skillsSection = el(`<div class="section"><div class="section__title">Stats</div></div>`);
+    skillsSection.appendChild(skillBar("Control", p.skills.control));
+    skillsSection.appendChild(skillBar("Power", p.skills.power));
+    skillsSection.appendChild(skillBar("Footwork", p.skills.footwork));
+    skillsSection.appendChild(skillBar("Net Game", p.skills.netGame));
+    skillsSection.appendChild(skillBar("Speed", p.skills.speed));
+    wrap.appendChild(skillsSection);
+  }
 
   const h2hPlayers = headToHeadStats();
   const h2hWins = h2hPlayers.reduce((sum, pl) => sum + pl.wins, 0);
@@ -3330,6 +3332,9 @@ function renderSettings() {
   appSection.appendChild(toggleRow("Dark mode", STATE.appSettings.theme === "dark", (val) => {
     updateState((s) => (s.appSettings.theme = val ? "dark" : "light"));
     applyTheme();
+  }));
+  appSection.appendChild(toggleRow("Stats", STATE.appSettings.showStats !== false, (val) => {
+    updateState((s) => (s.appSettings.showStats = val));
   }));
 
   const langField = el(`<div class="field"><label class="field__label">Language</label></div>`);
