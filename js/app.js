@@ -156,6 +156,8 @@ function parseHash() {
   if (parts[0] === "training" && parts[1] === "exercise") return { view: "exercise", id: parts[2] };
   if (parts[0] === "training" && parts[1] === "shot" && parts[3]) return { view: "shotDirection", shot: parts[2], direction: parts[3] };
   if (parts[0] === "training" && parts[1] === "shot") return { view: "shot", shot: parts[2] };
+  if (parts[0] === "training" && parts[1] === "session" && parts[2] === "builder") return { view: "sessionBuilder" };
+  if (parts[0] === "training" && parts[1] === "session") return { view: "session", id: parts[2] };
   if (parts[0] === "training") return { view: "training" };
   if (parts[0] === "settings") return { view: "settings" };
   return { view: "overview" };
@@ -182,13 +184,25 @@ function render() {
   else if (route.view === "shot") screen.replaceChildren(renderShotPage(route.shot));
   else if (route.view === "shotDirection") screen.replaceChildren(renderShotDirectionPage(route.shot, route.direction));
   else if (route.view === "exercise") screen.replaceChildren(renderExercisePage(route.id));
+  else if (route.view === "sessionBuilder") screen.replaceChildren(renderSessionBuilder());
+  else if (route.view === "session") screen.replaceChildren(renderSessionPage(route.id));
   else if (route.view === "settings") screen.replaceChildren(renderSettings());
 
   updateNavActive(route.view);
 }
 
 function updateNavActive(view) {
-  const map = { overview: "overview", training: "training", category: "training", shot: "training", shotDirection: "training", exercise: "training", settings: "settings" };
+  const map = {
+    overview: "overview",
+    training: "training",
+    category: "training",
+    shot: "training",
+    shotDirection: "training",
+    exercise: "training",
+    sessionBuilder: "training",
+    session: "training",
+    settings: "settings",
+  };
   document.querySelectorAll(".nav-item").forEach((btn) => {
     btn.classList.toggle("is-active", btn.dataset.nav === map[view]);
   });
@@ -256,11 +270,11 @@ function renderOverview() {
   } else {
     const list = el(`<div class="activity-list"></div>`);
     p.sessionHistory.slice(0, 5).forEach((rec) => {
-      const cat = getCategory(rec.categoryId) || { emoji: "🏸", gradient: "linear-gradient(135deg,#2b3350,#171b2b)" };
+      const cat = getCategory(rec.categoryId) || { photo: "assets/categories/technique.jpg", gradient: "linear-gradient(135deg,#2b3350,#171b2b)" };
       const card = el(`
         <button class="activity-card">
           <div class="activity-card__header">
-            <span class="activity-card__icon" style="background:${cat.gradient}">${cat.emoji}</span>
+            <span class="activity-card__icon" style="background-image:url('${cat.photo}')"></span>
             <div>
               <div class="activity-card__title">${rec.exerciseName}</div>
               <div class="activity-card__date">${relativeDateLabel(rec.dateISO)} · ${rec.timeLabel}</div>
@@ -269,9 +283,13 @@ function renderOverview() {
           </div>
           <div class="activity-card__stats">
             <span>⏱ ${formatMMSS(rec.durationSeconds)}</span>
-            <span>🔁 ${rec.setsCompleted} sets · ${
-              rec.mode === "time" ? `${formatMMSS(rec.totalWorkSeconds || 0)} training` : `${rec.totalShuttles ?? rec.totalReps ?? "—"} shuttles`
-            }</span>
+            ${
+              rec.mode === "session"
+                ? `<span>📋 ${rec.setsCompleted} exercise${rec.setsCompleted === 1 ? "" : "s"} done</span>`
+                : `<span>🔁 ${rec.setsCompleted} sets · ${
+                    rec.mode === "time" ? `${formatMMSS(rec.totalWorkSeconds || 0)} training` : `${rec.totalShuttles ?? rec.totalReps ?? "—"} shuttles`
+                  }</span>`
+            }
             <span>🔥 ${rec.calories} cal</span>
             ${rec.expGained != null ? `<span>✨ +${rec.expGained % 1 === 0 ? rec.expGained : rec.expGained.toFixed(1)} exp</span>` : ""}
           </div>
@@ -355,7 +373,7 @@ function renderTraining() {
         const row = el(`
           <button class="exercise-row">
             <div class="exercise-row__main">
-              <div class="exercise-row__name">${cat.emoji} ${ex.name} ${done ? '<span class="badge-done">✓ done</span>' : ""}</div>
+              <div class="exercise-row__name">${ex.name} ${done ? '<span class="badge-done">✓ done</span>' : ""}</div>
               <div class="exercise-row__meta">${stars(ex.difficulty)} · ${cat.name}</div>
             </div>
             <div class="exercise-row__arrow">→</div>
@@ -369,13 +387,13 @@ function renderTraining() {
   });
 
   CATEGORIES.forEach((cat) => {
-    const count = getExercisesForCategory(cat.id).length;
+    const countLabel =
+      cat.id === "sessions" ? `${STATE.progress.trainingSessions.length} sessions` : `${getExercisesForCategory(cat.id).length} exercises`;
     const card = el(`
-      <button class="category-card" style="background:${cat.gradient}">
-        <div class="category-card__emoji">${cat.emoji}</div>
+      <button class="category-card" style="background-image:linear-gradient(to top, rgba(6,8,12,0.92), rgba(6,8,12,0.15) 65%), url('${cat.photo}')">
         <div class="category-card__name">${cat.name}</div>
         <div class="category-card__tagline">${cat.tagline}</div>
-        <div class="category-card__count">${count} exercises</div>
+        <div class="category-card__count">${countLabel}</div>
       </button>
     `);
     card.addEventListener("click", () => navigate(`/training/category/${cat.id}`));
@@ -391,8 +409,7 @@ function exerciseCard(ex) {
   const done = STATE.progress.completedExerciseIds.includes(ex.id);
   const card = el(`
     <button class="exercise-card">
-      <div class="exercise-card__thumb" style="background:${cat.gradient}">
-        <span>${cat.emoji}</span>
+      <div class="exercise-card__thumb" style="background-image:url('${cat.photo}')">
         ${done ? '<span class="exercise-card__done">✓</span>' : ""}
       </div>
       <div class="exercise-card__body">
@@ -418,8 +435,7 @@ function renderCategoryPage(categoryId) {
   wrap.appendChild(back);
 
   wrap.appendChild(el(`
-    <div class="category-banner" style="background:${cat.gradient}">
-      <div class="category-banner__emoji">${cat.emoji}</div>
+    <div class="category-banner" style="background-image:linear-gradient(to top, rgba(6,8,12,0.92), rgba(6,8,12,0.1) 65%), url('${cat.photo}')">
       <div class="category-banner__name">${cat.name}</div>
       <div class="category-banner__tagline">${cat.tagline}</div>
     </div>
@@ -427,7 +443,30 @@ function renderCategoryPage(categoryId) {
 
   const list = el(`<div class="exercise-list"></div>`);
 
-  if (categoryId === "technique") {
+  if (categoryId === "sessions") {
+    const addBtn = el(`<button class="add-drill-btn">+ Build Training Session</button>`);
+    addBtn.addEventListener("click", () => navigate("/training/session/builder"));
+    wrap.appendChild(addBtn);
+
+    if (STATE.progress.trainingSessions.length === 0) {
+      list.appendChild(el(`<div class="empty-state">No training sessions yet. Build one to compile drills, strength work, and feeding drills into a single timed practice.</div>`));
+    } else {
+      STATE.progress.trainingSessions.forEach((session) => {
+        const isRunning = STATE.progress.activeSessionRun && STATE.progress.activeSessionRun.sessionId === session.id;
+        const row = el(`
+          <button class="exercise-row">
+            <div class="exercise-row__main">
+              <div class="exercise-row__name">${session.name} ${isRunning ? '<span class="badge-custom">Running</span>' : ""}</div>
+              <div class="exercise-row__meta">${session.exerciseIds.length} exercises · ${session.targetMinutes} min target</div>
+            </div>
+            <div class="exercise-row__arrow">→</div>
+          </button>
+        `);
+        row.addEventListener("click", () => navigate(`/training/session/${session.id}`));
+        list.appendChild(row);
+      });
+    }
+  } else if (categoryId === "technique") {
     getShotGroups().forEach((group) => {
       const doneCount = group.exercises.filter((e) => STATE.progress.completedExerciseIds.includes(e.id)).length;
       const row = el(`
@@ -485,8 +524,7 @@ function renderShotPage(shotSlug) {
   const cat = getCategory("technique");
   const doneCount = group.exercises.filter((e) => STATE.progress.completedExerciseIds.includes(e.id)).length;
   wrap.appendChild(el(`
-    <div class="category-banner" style="background:${cat.gradient}">
-      <div class="category-banner__emoji">${cat.emoji}</div>
+    <div class="category-banner" style="background-image:linear-gradient(to top, rgba(6,8,12,0.92), rgba(6,8,12,0.1) 65%), url('${cat.photo}')">
       <div class="category-banner__name">${group.name}</div>
       <div class="category-banner__tagline">${group.exercises.length} variations · ${doneCount}/${group.exercises.length} done</div>
     </div>
@@ -560,6 +598,312 @@ function renderShotDirectionPage(shotSlug, directionSlug) {
 
   return wrap;
 }
+
+// ---------- Training Sessions ----------
+
+function getAllExercisesIncludingCustom() {
+  return [...EXERCISES, ...STATE.progress.customDrills];
+}
+
+function renderSessionBuilder() {
+  const wrap = el(`<div class="view view--session-builder"></div>`);
+  const back = el(`<button class="back-button">← Training Sessions</button>`);
+  back.addEventListener("click", () => navigate("/training/category/sessions"));
+  wrap.appendChild(back);
+
+  wrap.appendChild(el(`
+    <div class="page-header">
+      <div class="page-header__title">Build Training Session</div>
+      <div class="page-header__subtitle">Compile drills, strength work, and feeding drills into one timed practice</div>
+    </div>
+  `));
+
+  const selectedIds = [];
+
+  wrap.appendChild(el(`
+    <div class="field">
+      <label class="field__label">Session name</label>
+      <input class="field__input" id="session-name" type="text" placeholder="e.g. Saturday morning practice" />
+    </div>
+  `));
+  wrap.appendChild(el(`
+    <div class="field">
+      <label class="field__label">Target duration (minutes)</label>
+      <input class="field__input" id="session-target" type="number" min="10" value="120" />
+    </div>
+  `));
+
+  const selectedSection = el(`<div class="section"><div class="section__title">In this session</div></div>`);
+  const selectedList = el(`<div class="exercise-list"></div>`);
+  selectedSection.appendChild(selectedList);
+  const selectedEmpty = el(`<div class="empty-state">No exercises added yet — search below to add some.</div>`);
+  selectedSection.appendChild(selectedEmpty);
+  wrap.appendChild(selectedSection);
+
+  function renderSelected() {
+    selectedList.replaceChildren();
+    selectedEmpty.style.display = selectedIds.length === 0 ? "" : "none";
+    selectedIds.forEach((id) => {
+      const ex = getExercise(id);
+      if (!ex) return;
+      const row = el(`
+        <button class="exercise-row">
+          <div class="exercise-row__main">
+            <div class="exercise-row__name">${ex.name}</div>
+            <div class="exercise-row__meta">${getCategory(ex.categoryId).name}</div>
+          </div>
+          <div class="exercise-row__arrow">✕</div>
+        </button>
+      `);
+      row.addEventListener("click", () => {
+        const idx = selectedIds.indexOf(id);
+        if (idx >= 0) selectedIds.splice(idx, 1);
+        renderSelected();
+      });
+      selectedList.appendChild(row);
+    });
+  }
+  renderSelected();
+
+  const searchSection = el(`<div class="section"><div class="section__title">Add exercises</div></div>`);
+  const searchWrap = el(`
+    <div class="search-bar">
+      <span class="search-bar__icon">🔍</span>
+      <input class="search-bar__input" type="text" placeholder="Search drills, strength work, techniques…" id="session-search" />
+    </div>
+  `);
+  searchSection.appendChild(searchWrap);
+  const searchResults = el(`<div class="exercise-list"></div>`);
+  searchSection.appendChild(searchResults);
+  wrap.appendChild(searchSection);
+
+  const searchInput = searchWrap.querySelector("#session-search");
+  searchInput.addEventListener("input", () => {
+    const query = searchInput.value.trim().toLowerCase();
+    searchResults.replaceChildren();
+    if (!query) return;
+    const matches = getAllExercisesIncludingCustom()
+      .filter((ex) => !selectedIds.includes(ex.id))
+      .filter((ex) => `${ex.name} ${ex.shotGroup || ""}`.toLowerCase().includes(query))
+      .slice(0, 30);
+    matches.forEach((ex) => {
+      const row = el(`
+        <button class="exercise-row">
+          <div class="exercise-row__main">
+            <div class="exercise-row__name">${ex.name}</div>
+            <div class="exercise-row__meta">${getCategory(ex.categoryId).name}</div>
+          </div>
+          <div class="exercise-row__arrow">+</div>
+        </button>
+      `);
+      row.addEventListener("click", () => {
+        selectedIds.push(ex.id);
+        renderSelected();
+        searchInput.value = "";
+        searchResults.replaceChildren();
+      });
+      searchResults.appendChild(row);
+    });
+  });
+
+  const createBtn = el(`<button class="start-btn">Create Session</button>`);
+  createBtn.addEventListener("click", () => {
+    const name = wrap.querySelector("#session-name").value.trim();
+    if (!name) {
+      toast("Give your session a name");
+      return;
+    }
+    if (selectedIds.length === 0) {
+      toast("Add at least one exercise to the session");
+      return;
+    }
+    const targetMinutes = Math.max(10, parseInt(wrap.querySelector("#session-target").value, 10) || 120);
+    const session = {
+      id: `session-${slugify(name)}-${Date.now()}`,
+      name,
+      targetMinutes,
+      exerciseIds: [...selectedIds],
+      createdAt: Date.now(),
+    };
+    updateState((s) => s.progress.trainingSessions.push(session));
+    toast("Training session created");
+    navigate(`/training/session/${session.id}`);
+  });
+  wrap.appendChild(createBtn);
+
+  return wrap;
+}
+
+function renderSessionPage(sessionId) {
+  const wrap = el(`<div class="view view--session"></div>`);
+  const session = STATE.progress.trainingSessions.find((s) => s.id === sessionId);
+  if (!session) {
+    wrap.appendChild(el(`<div class="empty-state">Training session not found.</div>`));
+    return wrap;
+  }
+
+  const back = el(`<button class="back-button">← Training Sessions</button>`);
+  back.addEventListener("click", () => navigate("/training/category/sessions"));
+  wrap.appendChild(back);
+
+  const cat = getCategory("sessions");
+  wrap.appendChild(el(`
+    <div class="category-banner" style="background-image:linear-gradient(to top, rgba(6,8,12,0.92), rgba(6,8,12,0.1) 65%), url('${cat.photo}')">
+      <div class="category-banner__name">${session.name}</div>
+      <div class="category-banner__tagline">${session.exerciseIds.length} exercises · ${session.targetMinutes} min target</div>
+    </div>
+  `));
+
+  const isRunning = STATE.progress.activeSessionRun && STATE.progress.activeSessionRun.sessionId === sessionId;
+
+  const clockBlock = el(`<div class="session-clock"></div>`);
+  wrap.appendChild(clockBlock);
+
+  let clockInterval = null;
+  function paintClock() {
+    if (!isRunning) {
+      clockBlock.replaceChildren(el(`<button class="start-btn" id="session-start-btn">Start Session</button>`));
+      clockBlock.querySelector("#session-start-btn").addEventListener("click", () => startSession(sessionId));
+      return;
+    }
+    const elapsedSeconds = Math.floor((Date.now() - STATE.progress.activeSessionRun.startedAt) / 1000);
+    const targetSeconds = session.targetMinutes * 60;
+    const pct = Math.min(100, (elapsedSeconds / targetSeconds) * 100);
+    clockBlock.replaceChildren(el(`
+      <div class="session-clock__box">
+        <div class="session-clock__time">${formatMMSS(elapsedSeconds)}</div>
+        <div class="session-clock__target">of ${session.targetMinutes} min target</div>
+        <div class="skill-bar__track"><div class="skill-bar__fill" style="width:${pct}%"></div></div>
+        <button class="reset-btn" id="session-end-btn">End Session</button>
+      </div>
+    `));
+    clockBlock.querySelector("#session-end-btn").addEventListener("click", async () => {
+      const ok = await showConfirm("End this training session? Elapsed time will be logged.");
+      if (ok) {
+        clearInterval(clockInterval);
+        endSession(sessionId);
+      }
+    });
+  }
+  paintClock();
+  if (isRunning) clockInterval = setInterval(paintClock, 1000);
+
+  const section = el(`<div class="section"><div class="section__title">Exercises in this session</div></div>`);
+  const list = el(`<div class="exercise-list"></div>`);
+  session.exerciseIds.forEach((id) => {
+    const ex = getExercise(id);
+    if (!ex) return;
+    const done = STATE.progress.completedExerciseIds.includes(id);
+    const row = el(`
+      <button class="exercise-row">
+        <div class="exercise-row__main">
+          <div class="exercise-row__name">${ex.name} ${done ? '<span class="badge-done">✓ done</span>' : ""}</div>
+          <div class="exercise-row__meta">${getCategory(ex.categoryId).name} · ${workoutSummaryLong(ex)}</div>
+        </div>
+        <div class="exercise-row__arrow">→</div>
+      </button>
+    `);
+    row.addEventListener("click", () => navigate(`/training/exercise/${id}`));
+    list.appendChild(row);
+  });
+  section.appendChild(list);
+  wrap.appendChild(section);
+
+  const deleteBtn = el(`<button class="reset-btn">Delete session</button>`);
+  deleteBtn.addEventListener("click", async () => {
+    const ok = await showConfirm(`Delete "${session.name}"? This can't be undone.`);
+    if (ok) {
+      if (isRunning) {
+        clearInterval(clockInterval);
+        updateState((s) => (s.progress.activeSessionRun = null));
+      }
+      updateState((s) => (s.progress.trainingSessions = s.progress.trainingSessions.filter((sess) => sess.id !== sessionId)));
+      toast("Training session deleted");
+      navigate("/training/category/sessions");
+    }
+  });
+  wrap.appendChild(deleteBtn);
+
+  return wrap;
+}
+
+function startSession(sessionId) {
+  updateState((s) => (s.progress.activeSessionRun = { sessionId, startedAt: Date.now() }));
+  paintSessionBanner();
+  render();
+}
+
+function endSession(sessionId) {
+  const session = STATE.progress.trainingSessions.find((s) => s.id === sessionId);
+  const run = STATE.progress.activeSessionRun;
+  if (!session || !run) return;
+  const elapsedSeconds = Math.max(1, Math.floor((Date.now() - run.startedAt) / 1000));
+  const expGained = elapsedSeconds / 60;
+  const doneCount = session.exerciseIds.filter((id) => STATE.progress.completedExerciseIds.includes(id)).length;
+
+  updateState((s) => {
+    const today = todayISO();
+    if (s.progress.lastTrainedISODate !== today) {
+      if (s.progress.lastTrainedISODate && daysBetween(s.progress.lastTrainedISODate, today) === 1) {
+        s.progress.streak += 1;
+      } else {
+        s.progress.streak = s.progress.lastTrainedISODate ? 1 : s.progress.streak || 1;
+      }
+      s.progress.lastTrainedISODate = today;
+    }
+    s.progress.sessionsCompleted += 1;
+    s.progress.sessionHistory.unshift({
+      id: `${Date.now()}`,
+      exerciseId: null,
+      exerciseName: `${session.name} (Training Session)`,
+      categoryId: "sessions",
+      dateISO: today,
+      timeLabel: new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }),
+      durationSeconds: elapsedSeconds,
+      setsCompleted: doneCount,
+      mode: "session",
+      totalWorkSeconds: elapsedSeconds,
+      expGained,
+      calories: Math.round((elapsedSeconds / 60) * getCategory("sessions").calPerMin),
+      effort: 0,
+    });
+    s.progress.sessionHistory = s.progress.sessionHistory.slice(0, 30);
+    s.progress.activeSessionRun = null;
+  });
+  paintSessionBanner();
+  toast(`Session logged — ${formatMMSS(elapsedSeconds)} trained`);
+  render();
+}
+
+function paintSessionBanner() {
+  const banner = document.getElementById("session-banner");
+  const frame = document.getElementById("app-frame");
+  const run = STATE.progress.activeSessionRun;
+  if (!run) {
+    banner.style.display = "none";
+    frame.classList.remove("has-session");
+    return;
+  }
+  const session = STATE.progress.trainingSessions.find((s) => s.id === run.sessionId);
+  if (!session) {
+    banner.style.display = "none";
+    frame.classList.remove("has-session");
+    return;
+  }
+  const elapsedSeconds = Math.floor((Date.now() - run.startedAt) / 1000);
+  banner.textContent = `⏱ ${session.name} — ${formatMMSS(elapsedSeconds)}`;
+  banner.style.display = "flex";
+  frame.classList.add("has-session");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("session-banner").addEventListener("click", () => {
+    const run = STATE.progress.activeSessionRun;
+    if (run) navigate(`/training/session/${run.sessionId}`);
+  });
+  paintSessionBanner();
+  setInterval(paintSessionBanner, 1000);
+});
 
 // ---------- Exercise detail ----------
 

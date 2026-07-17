@@ -7,7 +7,7 @@ const CATEGORIES = [
   {
     id: "technique",
     name: "Technique",
-    emoji: "🏸",
+    photo: "assets/categories/technique.jpg",
     tagline: "The full Shuttle Code shot library — every technique, position, and variation",
     gradient: "linear-gradient(135deg,#2b3350,#171b2b)",
     calPerMin: 9,
@@ -15,7 +15,7 @@ const CATEGORIES = [
   {
     id: "footwork",
     name: "Footwork",
-    emoji: "🦶",
+    photo: "assets/categories/footwork.jpg",
     tagline: "Improve speed and court coverage",
     gradient: "linear-gradient(135deg,#3a2a12,#241a0f)",
     calPerMin: 10,
@@ -23,7 +23,7 @@ const CATEGORIES = [
   {
     id: "drills",
     name: "Drills",
-    emoji: "🎯",
+    photo: "assets/categories/drills.jpg",
     tagline: "Tactical drills and match-ready habits",
     gradient: "linear-gradient(135deg,#123245,#0f1c28)",
     calPerMin: 8,
@@ -31,10 +31,18 @@ const CATEGORIES = [
   {
     id: "strength",
     name: "Strength & Conditioning",
-    emoji: "💪",
+    photo: "assets/categories/strength.jpg",
     tagline: "Badminton-specific athletic training",
     gradient: "linear-gradient(135deg,#3a1414,#241010)",
     calPerMin: 9,
+  },
+  {
+    id: "sessions",
+    name: "Training Sessions",
+    photo: "assets/categories/sessions.jpg",
+    tagline: "Build a custom practice session and time the whole thing",
+    gradient: "linear-gradient(135deg,#1c1f45,#101228)",
+    calPerMin: 8,
   },
 ];
 

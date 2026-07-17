@@ -31,6 +31,8 @@ function defaultState() {
       difficultyRatings: {}, // exerciseId -> 1-5
       lastExerciseId: null,
       customDrills: [], // user-created drills, same shape as EXERCISES entries plus isCustom: true
+      trainingSessions: [], // [{id, name, targetMinutes, exerciseIds: [...], createdAt}]
+      activeSessionRun: null, // {sessionId, startedAt} | null — at most one running session at a time
     },
   };
 }
