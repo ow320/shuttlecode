@@ -72,8 +72,17 @@ function daysBetween(isoA, isoB) {
 
 function skillBumpFor(ex) {
   if (ex.categoryId === "footwork") return "footwork";
-  if (ex.shotGroup && ex.shotGroup.includes("Smash")) return "smashPower";
-  if (ex.shotGroup && ex.shotGroup.includes("Net Shot")) return "netControl";
+  if (ex.categoryId === "strength") return "speed";
+  const shot = ex.shotGroup || "";
+  if (shot.includes("Smash")) return "power";
+  if (shot.includes("Drive")) return "speed";
+  if (shot.includes("Net Shot")) return "netGame";
+  if (shot.includes("Clear") || shot.includes("Drop Shot") || shot.includes("Lift") || shot.includes("Defence")) return "control";
+  if (ex.categoryId === "drills") {
+    if (ex.id === "net-kill" || ex.id === "net-recovery") return "netGame";
+    if (ex.id === "fast-interceptions" || ex.id === "attack-positioning") return "speed";
+    return "control";
+  }
   return null;
 }
 
@@ -223,10 +232,12 @@ function renderOverview() {
     </div>
   `));
 
-  const skillsSection = el(`<div class="section"><div class="section__title">Skills improved</div></div>`);
+  const skillsSection = el(`<div class="section"><div class="section__title">Stats</div></div>`);
+  skillsSection.appendChild(skillBar("Control", p.skills.control));
+  skillsSection.appendChild(skillBar("Power", p.skills.power));
   skillsSection.appendChild(skillBar("Footwork", p.skills.footwork));
-  skillsSection.appendChild(skillBar("Smash power", p.skills.smashPower));
-  skillsSection.appendChild(skillBar("Net control", p.skills.netControl));
+  skillsSection.appendChild(skillBar("Net Game", p.skills.netGame));
+  skillsSection.appendChild(skillBar("Speed", p.skills.speed));
   wrap.appendChild(skillsSection);
 
   const recentSection = el(`<div class="section"><div class="section__title">Recent Activity</div></div>`);
@@ -235,7 +246,7 @@ function renderOverview() {
   } else {
     const list = el(`<div class="activity-list"></div>`);
     p.sessionHistory.slice(0, 5).forEach((rec) => {
-      const cat = getCategory(rec.categoryId);
+      const cat = getCategory(rec.categoryId) || { emoji: "🏸", gradient: "linear-gradient(135deg,#2b3350,#171b2b)" };
       const card = el(`
         <button class="activity-card">
           <div class="activity-card__header">

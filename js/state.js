@@ -24,7 +24,7 @@ function defaultState() {
       sessionsCompleted: 12,
       streak: 5,
       lastTrainedISODate: null,
-      skills: { footwork: 15, smashPower: 10, netControl: 8 },
+      skills: { control: 12, power: 10, footwork: 15, netGame: 8, speed: 10 },
       completedExerciseIds: [],
       sessionHistory: [], // [{id, exerciseId, exerciseName, categoryId, dateISO, timeLabel, durationSeconds, setsCompleted, totalReps, calories, effort}]
       notes: {}, // exerciseId -> string
@@ -44,7 +44,11 @@ function loadState() {
       preferences: { ...defaultState().preferences, ...(parsed.preferences || {}) },
       notifications: { ...defaultState().notifications, ...(parsed.notifications || {}) },
       appSettings: { ...defaultState().appSettings, ...(parsed.appSettings || {}) },
-      progress: { ...defaultState().progress, ...(parsed.progress || {}) },
+      progress: {
+        ...defaultState().progress,
+        ...(parsed.progress || {}),
+        skills: { ...defaultState().progress.skills, ...((parsed.progress && parsed.progress.skills) || {}) },
+      },
     };
   } catch (e) {
     console.warn("Failed to load state, resetting", e);
