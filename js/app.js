@@ -731,6 +731,15 @@ function renderSessionBuilder() {
     });
   });
 
+  const createExerciseBtn = el(`<button class="add-drill-btn">+ Create Custom Exercise or Drill</button>`);
+  createExerciseBtn.addEventListener("click", () => {
+    openDrillForm((drill) => {
+      selectedIds.push(drill.id);
+      renderSelected();
+    });
+  });
+  wrap.appendChild(createExerciseBtn);
+
   const createBtn = el(`<button class="start-btn">Create Session</button>`);
   createBtn.addEventListener("click", () => {
     const name = wrap.querySelector("#session-name").value.trim();
@@ -1323,16 +1332,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ---------- Custom Drills ----------
 
-function openDrillForm() {
+function openDrillForm(onCreated) {
   document.getElementById("drill-form-overlay").classList.add("is-open");
-  renderDrillForm();
+  renderDrillForm(onCreated);
 }
 
 function closeDrillForm() {
   document.getElementById("drill-form-overlay").classList.remove("is-open");
 }
 
-function renderDrillForm() {
+function renderDrillForm(onCreated) {
   const body = document.getElementById("drill-form-body");
   let mode = "shuttles";
 
@@ -1419,7 +1428,8 @@ function renderDrillForm() {
     updateState((s) => s.progress.customDrills.push(drill));
     closeDrillForm();
     toast("Custom drill added");
-    render();
+    if (onCreated) onCreated(drill);
+    else render();
   });
 }
 
