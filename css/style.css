@@ -977,3 +977,43 @@ button:active {
   font-weight: 700;
   padding: 6px 0 16px;
 }
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  border: 1px dashed transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.chip-list.drop-target-active {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: var(--accent);
+}
+
+.drag-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-card-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: grab;
+  user-select: none;
+}
+.drag-chip.is-dragging { opacity: 0.4; }
+.drag-chip--coach { border-color: color-mix(in srgb, var(--accent-2) 45%, var(--border)); }
+.drag-chip__level {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  padding: 2px 7px;
+  border-radius: 999px;
+}

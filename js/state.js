@@ -89,8 +89,9 @@ function defaultState() {
       trainingSessions: [], // [{id, name, targetMinutes, exerciseIds: [...], createdAt}]
       activeSessionRun: null, // {sessionId, startedAt} | null — at most one running session at a time
       scheduledSessions: [], // [{id, sessionId, startDate: "YYYY-MM-DD", time: "HH:MM"|null, repeatDays: number|null, createdAt}]
-      contentOverrides: {}, // exerciseId -> {goal, description, videoUrl, coachingPoints, commonMistakes} — user edits layered on built-in exercises
+      contentOverrides: {}, // exerciseId -> {goal, description, videoUrl, coachingPoints, commonMistakes, workout} — user edits layered on built-in exercises
       sparringSessions: [], // [{id, name, targetMinutes, opponents: [name,...], games: [{id, opponentName, durationSeconds, myScore, oppScore}], dateISO, timeLabel, createdAt}]
+      students: [], // coach's roster: [{id, name, level, notes, createdAt}]
     },
   };
 }

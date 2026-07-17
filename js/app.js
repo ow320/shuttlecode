@@ -207,19 +207,19 @@ function workoutUnitLabel(mode) {
 }
 
 function workoutSummaryShort(ex) {
-  const w = ex.workout;
+  const w = getEffectiveWorkout(ex);
   return w.mode === "time" ? `${w.sets}×${w.durationSeconds}s` : `${w.sets}×${w.shuttles}`;
 }
 
 function workoutSummaryLong(ex) {
-  const w = ex.workout;
+  const w = getEffectiveWorkout(ex);
   return w.mode === "time" ? `${w.sets} sets × ${w.durationSeconds}s` : `${w.sets} sets × ${w.shuttles} ${workoutUnitLabel(w.mode)}`;
 }
 
 // Mirrors the live timer's own math (work-phase duration + rest between sets,
 // no rest after the final set) so the estimate matches what actually happens.
 function estimateExerciseSeconds(ex) {
-  const w = ex.workout;
+  const w = getEffectiveWorkout(ex);
   const workSeconds = w.mode === "time" ? w.durationSeconds : Math.max(20, Math.min(90, w.shuttles * 3));
   return w.sets * workSeconds + Math.max(0, w.sets - 1) * w.restSeconds;
 }
@@ -324,6 +324,7 @@ function parseHash() {
   if (parts[0] === "history") return { view: "history" };
   if (parts[0] === "head-to-head" && parts[1]) return { view: "headToHeadDetail", name: parts[1] };
   if (parts[0] === "head-to-head") return { view: "headToHead" };
+  if (parts[0] === "students") return { view: "students" };
   if (parts[0] === "settings") return { view: "settings" };
   return { view: "overview" };
 }
@@ -356,6 +357,7 @@ function render() {
   else if (route.view === "historyDetail") screen.replaceChildren(renderHistoryDetailPage(route.id));
   else if (route.view === "headToHead") screen.replaceChildren(renderHeadToHeadPage());
   else if (route.view === "headToHeadDetail") screen.replaceChildren(renderHeadToHeadDetailPage(route.name));
+  else if (route.view === "students") screen.replaceChildren(renderStudentListPage());
   else if (route.view === "settings") screen.replaceChildren(renderSettings());
 
   updateNavActive(route.view);
@@ -376,6 +378,7 @@ function updateNavActive(view) {
     historyDetail: "overview",
     headToHead: "overview",
     headToHeadDetail: "overview",
+    students: "overview",
     settings: "settings",
   };
   document.querySelectorAll(".nav-item").forEach((btn) => {
@@ -441,7 +444,7 @@ function renderLessonInfoBlock(session) {
         <div class="exercise-row">
           <div class="exercise-row__main">
             <div class="exercise-row__name">${court.name}</div>
-            <div class="exercise-row__meta">👤 ${court.students.join(", ") || "No students"}</div>
+            <div class="exercise-row__meta">👤 ${court.students.map((id) => getStudent(id)?.name || "Unknown student").join(", ") || "No students"}</div>
             <div class="exercise-row__meta">🧑‍🏫 ${court.coaches.join(", ") || "No coach assigned"}</div>
           </div>
         </div>
@@ -504,6 +507,145 @@ function renderCoachOverviewBody(wrap) {
   const calSection = el(`<div class="section"><div class="section__title">Coaching Calendar</div></div>`);
   calSection.appendChild(renderCalendarWidget());
   wrap.appendChild(calSection);
+
+  const studentsSection = el(`<div class="section"><div class="section__title">Student List</div></div>`);
+  const studentCount = STATE.progress.students.length;
+  const studentsCard = el(`
+    <button class="next-session-card">
+      <div class="next-session-card__label">👥 Students</div>
+      <div class="next-session-card__name">${studentCount === 0 ? "Add your first student" : `${studentCount} student${studentCount === 1 ? "" : "s"} in your roster`}</div>
+      <div class="next-session-card__when">Manage roster →</div>
+    </button>
+  `);
+  studentsCard.addEventListener("click", () => navigate("/students"));
+  studentsSection.appendChild(studentsCard);
+  wrap.appendChild(studentsSection);
+}
+
+function getStudent(studentId) {
+  return STATE.progress.students.find((s) => s.id === studentId);
+}
+
+function renderStudentListPage() {
+  const wrap = el(`<div class="view view--students"></div>`);
+  const back = el(`<button class="back-button">← Overview</button>`);
+  back.addEventListener("click", () => navigate("/overview"));
+  wrap.appendChild(back);
+
+  wrap.appendChild(el(`
+    <div class="page-header">
+      <div class="page-header__title">Student List</div>
+      <div class="page-header__subtitle">Your roster, skill levels, and notes</div>
+    </div>
+  `));
+
+  const addBtn = el(`<button class="add-drill-btn">+ Add Student</button>`);
+  addBtn.addEventListener("click", () => openStudentForm());
+  wrap.appendChild(addBtn);
+
+  const list = el(`<div class="exercise-list"></div>`);
+  if (STATE.progress.students.length === 0) {
+    list.appendChild(el(`<div class="empty-state">No students yet. Add your first student to start building your roster.</div>`));
+  } else {
+    STATE.progress.students
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .forEach((student) => {
+        const row = el(`
+          <button class="exercise-row">
+            <div class="exercise-row__main">
+              <div class="exercise-row__name">${student.name}</div>
+              <div class="exercise-row__meta">${student.level}${student.notes ? " · has notes" : ""}</div>
+            </div>
+            <div class="exercise-row__arrow">→</div>
+          </button>
+        `);
+        row.addEventListener("click", () => openStudentForm(student));
+        list.appendChild(row);
+      });
+  }
+  wrap.appendChild(list);
+
+  return wrap;
+}
+
+function openStudentForm(existingStudent) {
+  document.getElementById("student-form-overlay").classList.add("is-open");
+  renderStudentForm(existingStudent);
+}
+
+function closeStudentForm() {
+  document.getElementById("student-form-overlay").classList.remove("is-open");
+}
+
+function renderStudentForm(existingStudent) {
+  const body = document.getElementById("student-form-body");
+  const isEdit = !!existingStudent;
+  let level = isEdit ? existingStudent.level : SKILL_LEVELS[0];
+
+  const view = el(`
+    <div class="drill-form">
+      <div class="drill-form__title">${isEdit ? "Edit Student" : "Add Student"}</div>
+      <div class="field">
+        <label class="field__label">Name</label>
+        <input class="field__input" id="student-name" type="text" placeholder="Student name" value="${isEdit ? existingStudent.name : ""}" />
+      </div>
+      <div class="field">
+        <label class="field__label">Skill level</label>
+        <div class="chip-row" id="student-level-row"></div>
+      </div>
+      <div class="field">
+        <label class="field__label">Notes</label>
+        <textarea class="notes-input" id="student-notes" placeholder="Goals, injuries, preferences…">${isEdit ? existingStudent.notes || "" : ""}</textarea>
+      </div>
+      <button class="start-btn" id="student-save">${isEdit ? "Save Changes" : "Add Student"}</button>
+      ${isEdit ? `<button class="reset-btn" id="student-delete">Remove Student</button>` : ""}
+    </div>
+  `);
+  body.replaceChildren(view);
+
+  const levelRow = view.querySelector("#student-level-row");
+  SKILL_LEVELS.forEach((lvl) => {
+    const chip = el(`<button class="chip ${level === lvl ? "is-active" : ""}" type="button">${lvl}</button>`);
+    chip.addEventListener("click", () => {
+      level = lvl;
+      levelRow.querySelectorAll(".chip").forEach((c) => c.classList.remove("is-active"));
+      chip.classList.add("is-active");
+    });
+    levelRow.appendChild(chip);
+  });
+
+  view.querySelector("#student-save").addEventListener("click", () => {
+    const name = view.querySelector("#student-name").value.trim();
+    if (!name) {
+      toast("Give the student a name");
+      return;
+    }
+    const notes = view.querySelector("#student-notes").value.trim();
+    updateState((s) => {
+      if (isEdit) {
+        const idx = s.progress.students.findIndex((st) => st.id === existingStudent.id);
+        if (idx >= 0) s.progress.students[idx] = { ...s.progress.students[idx], name, level, notes };
+      } else {
+        s.progress.students.push({ id: `student-${slugify(name)}-${Date.now()}`, name, level, notes, createdAt: Date.now() });
+      }
+    });
+    closeStudentForm();
+    toast(isEdit ? "Student updated" : "Student added");
+    render();
+  });
+
+  if (isEdit) {
+    view.querySelector("#student-delete").addEventListener("click", async () => {
+      const ok = await showConfirm(`Remove ${existingStudent.name} from your roster? This won't affect past lessons.`);
+      if (ok) {
+        updateState((s) => (s.progress.students = s.progress.students.filter((st) => st.id !== existingStudent.id)));
+        closeStudentForm();
+        toast("Student removed");
+        render();
+      }
+    });
+  }
 }
 
 // ---------- Overview ----------
@@ -1253,7 +1395,7 @@ function renderSessionBuilder() {
   });
 
   const selectedIds = [];
-  let lessonType = null; // null | "private" | "semiprivate" | "group" — only used in coach mode
+  let lessonType = currentMode === "coach" ? "private" : null; // "private" | "semiprivate" | "group" — only used in coach mode
   let lessonAccessor = null;
 
   trainingFields.appendChild(el(`
@@ -1274,7 +1416,6 @@ function renderSessionBuilder() {
     const lessonChipRow = el(`<div class="chip-row"></div>`);
     const lessonFieldsContainer = el(`<div id="lesson-fields"></div>`);
     const LESSON_TYPE_OPTIONS = [
-      { value: null, label: "Regular" },
       { value: "private", label: "Private (1)" },
       { value: "semiprivate", label: "Semi-Private (2-3)" },
       { value: "group", label: "Group (5+)" },
@@ -1307,6 +1448,7 @@ function renderSessionBuilder() {
       });
       lessonChipRow.appendChild(chip);
     });
+    paintLessonFields();
 
     lessonSection.appendChild(lessonChipRow);
     lessonSection.appendChild(lessonFieldsContainer);
@@ -1362,7 +1504,7 @@ function renderSessionBuilder() {
         <div class="exercise-row exercise-row--draggable" draggable="true">
           <span class="drag-handle">☰</span>
           <div class="exercise-row__main">
-            <div class="exercise-row__name">${ex.name} ${ex.isCustom ? '<span class="edit-hint">✎ edit</span>' : ""}</div>
+            <div class="exercise-row__name">${ex.name} <span class="edit-hint">✎ edit sets</span></div>
             <div class="exercise-row__meta">${getCategory(ex.categoryId).name} · ${workoutSummaryShort(ex)}</div>
           </div>
           <button class="remove-btn" type="button">✕</button>
@@ -1376,7 +1518,9 @@ function renderSessionBuilder() {
             renderSelected();
           }, ex);
         } else {
-          toast("Built-in exercises can't be edited — create a custom drill to set your own numbers.");
+          openSetsForm(ex, () => {
+            renderSelected();
+          });
         }
       });
 
@@ -1524,7 +1668,7 @@ function renderSessionBuilder() {
     }
 
     let lessonPayload = {};
-    if (currentMode === "coach" && lessonType) {
+    if (currentMode === "coach") {
       if (lessonType === "private") {
         const studentName = (wrap.querySelector("#lesson-student-solo")?.value || "").trim();
         if (!studentName) {
@@ -1636,43 +1780,159 @@ function buildSemiPrivateFields(container) {
   return { getNames: () => names.map((n) => n.trim()).filter(Boolean) };
 }
 
-// Renders the group-lesson plan builder: a list of courts, each with its own
-// student roster and assigned coach(es). Returns an accessor for cleaned data.
+// Renders the group-lesson plan builder: pick students from the saved roster
+// into an unassigned pool, then drag students and coaches between courts (or
+// use Auto-Assign to split the pool across courts by skill level). Returns
+// an accessor for cleaned data.
 function buildLessonPlanFields(container) {
   let courtIdCounter = 0;
-  const courts = [{ id: courtIdCounter++, name: "Court 1", students: [""], coaches: [""] }];
+  let coachIdCounter = 0;
+  const courts = [{ id: courtIdCounter++, name: "Court 1", students: [], coaches: [] }];
+  let unassignedStudentIds = [];
+  let dragPayload = null; // { kind: "student"|"coach", id }
+
+  const rosterField = el(`<div class="field"><label class="field__label">Add students to this lesson</label></div>`);
+  const searchWrap = el(`
+    <div class="search-bar">
+      <span class="search-bar__icon">🔍</span>
+      <input class="search-bar__input" type="text" placeholder="Search your student list…" id="lesson-roster-search" />
+    </div>
+  `);
+  rosterField.appendChild(searchWrap);
+  const searchResults = el(`<div class="exercise-list"></div>`);
+  rosterField.appendChild(searchResults);
+  container.appendChild(rosterField);
+
+  const allLessonStudentIds = () => new Set([...unassignedStudentIds, ...courts.flatMap((c) => c.students)]);
+
+  const searchInput = searchWrap.querySelector("#lesson-roster-search");
+  searchInput.addEventListener("input", () => {
+    const query = searchInput.value.trim().toLowerCase();
+    searchResults.replaceChildren();
+    if (!query) return;
+    if (STATE.progress.students.length === 0) {
+      searchResults.appendChild(el(`<div class="empty-state">No students in your roster yet. Add students from the Student List on your Overview page.</div>`));
+      return;
+    }
+    const already = allLessonStudentIds();
+    const matches = STATE.progress.students
+      .filter((st) => !already.has(st.id))
+      .filter((st) => st.name.toLowerCase().includes(query))
+      .slice(0, 20);
+    matches.forEach((st) => {
+      const row = el(`
+        <button class="exercise-row">
+          <div class="exercise-row__main">
+            <div class="exercise-row__name">${st.name}</div>
+            <div class="exercise-row__meta">${st.level}</div>
+          </div>
+          <div class="exercise-row__arrow">+</div>
+        </button>
+      `);
+      row.addEventListener("click", () => {
+        unassignedStudentIds.push(st.id);
+        searchInput.value = "";
+        searchResults.replaceChildren();
+        paintAll();
+      });
+      searchResults.appendChild(row);
+    });
+  });
+
+  const unassignedSection = el(`<div class="section"><div class="section__title">Unassigned Students</div></div>`);
+  const unassignedList = el(`<div class="chip-list"></div>`);
+  unassignedSection.appendChild(unassignedList);
+  const unassignedEmpty = el(`<div class="empty-state">Search above to add students to this lesson.</div>`);
+  unassignedSection.appendChild(unassignedEmpty);
+  container.appendChild(unassignedSection);
+
+  const autoAssignBtn = el(`<button class="add-drill-btn" type="button">⚡ Auto-Assign by Skill Level</button>`);
+  container.appendChild(autoAssignBtn);
+
   const courtList = el(`<div class="game-list"></div>`);
   container.appendChild(courtList);
   const addCourtBtn = el(`<button class="add-drill-btn" type="button">+ Add Court</button>`);
   container.appendChild(addCourtBtn);
 
-  function paintNameList(names, listEl, placeholderNoun, onChange) {
-    listEl.replaceChildren();
-    names.forEach((val, idx) => {
-      const row = el(`
-        <div class="opponent-row">
-          <input class="field__input" type="text" placeholder="${placeholderNoun} ${idx + 1} name" value="${val}" />
-          ${names.length > 1 ? '<button class="remove-btn" type="button">✕</button>' : ""}
-        </div>
-      `);
-      const input = row.querySelector("input");
-      input.addEventListener("input", () => {
-        names[idx] = input.value;
-      });
-      const removeBtn = row.querySelector(".remove-btn");
-      if (removeBtn) {
-        removeBtn.addEventListener("click", () => {
-          names.splice(idx, 1);
-          onChange();
-        });
+  function studentChip(studentId) {
+    const student = getStudent(studentId);
+    const chip = el(`
+      <div class="drag-chip" draggable="true">
+        <span class="drag-chip__name">${student ? student.name : "Unknown student"}</span>
+        ${student ? `<span class="drag-chip__level">${student.level}</span>` : ""}
+      </div>
+    `);
+    chip.addEventListener("dragstart", (e) => {
+      dragPayload = { kind: "student", id: studentId };
+      chip.classList.add("is-dragging");
+      e.dataTransfer.effectAllowed = "move";
+    });
+    chip.addEventListener("dragend", () => chip.classList.remove("is-dragging"));
+    return chip;
+  }
+
+  function coachChip(coach) {
+    const chip = el(`<div class="drag-chip drag-chip--coach" draggable="true"><span class="drag-chip__name">🧑‍🏫 ${coach.name}</span></div>`);
+    chip.addEventListener("dragstart", (e) => {
+      dragPayload = { kind: "coach", id: coach.id };
+      chip.classList.add("is-dragging");
+      e.dataTransfer.effectAllowed = "move";
+    });
+    chip.addEventListener("dragend", () => chip.classList.remove("is-dragging"));
+    return chip;
+  }
+
+  function removeStudentFromEverywhere(studentId) {
+    unassignedStudentIds = unassignedStudentIds.filter((id) => id !== studentId);
+    courts.forEach((c) => (c.students = c.students.filter((id) => id !== studentId)));
+  }
+
+  function moveCoach(coachId, targetCourtId) {
+    let coach = null;
+    courts.forEach((c) => {
+      const idx = c.coaches.findIndex((co) => co.id === coachId);
+      if (idx >= 0) {
+        coach = c.coaches[idx];
+        c.coaches.splice(idx, 1);
       }
-      listEl.appendChild(row);
+    });
+    if (coach) {
+      const target = courts.find((c) => c.id === targetCourtId);
+      if (target) target.coaches.push(coach);
+    }
+  }
+
+  function wireDropZone(zoneEl, onDropStudent, onDropCoach) {
+    zoneEl.addEventListener("dragover", (e) => {
+      if (!dragPayload) return;
+      e.preventDefault();
+      zoneEl.classList.add("drop-target-active");
+    });
+    zoneEl.addEventListener("dragleave", () => zoneEl.classList.remove("drop-target-active"));
+    zoneEl.addEventListener("drop", (e) => {
+      e.preventDefault();
+      zoneEl.classList.remove("drop-target-active");
+      if (!dragPayload) return;
+      if (dragPayload.kind === "student" && onDropStudent) onDropStudent(dragPayload.id);
+      if (dragPayload.kind === "coach" && onDropCoach) onDropCoach(dragPayload.id);
+      dragPayload = null;
     });
   }
 
-  function renderCourts() {
+  function paintUnassigned() {
+    unassignedList.replaceChildren();
+    unassignedStudentIds.forEach((id) => unassignedList.appendChild(studentChip(id)));
+    unassignedEmpty.style.display = unassignedStudentIds.length === 0 ? "" : "none";
+  }
+  wireDropZone(unassignedList, (studentId) => {
+    removeStudentFromEverywhere(studentId);
+    unassignedStudentIds.push(studentId);
+    paintAll();
+  });
+
+  function paintCourts() {
     courtList.replaceChildren();
-    courts.forEach((court, cIdx) => {
+    courts.forEach((court) => {
       const card = el(`
         <div class="game-card">
           <div class="game-card__header">
@@ -1680,11 +1940,13 @@ function buildLessonPlanFields(container) {
             ${courts.length > 1 ? '<button class="remove-btn" type="button">✕</button>' : ""}
           </div>
           <label class="field__label">Students</label>
-          <div class="opponent-list students-list"></div>
-          <button class="mini-add-btn" type="button" data-role="add-student">+ Add Student</button>
+          <div class="chip-list students-drop"></div>
           <label class="field__label" style="margin-top:14px;">Coach(es)</label>
-          <div class="opponent-list coaches-list"></div>
-          <button class="mini-add-btn" type="button" data-role="add-coach">+ Add Coach</button>
+          <div class="chip-list coaches-drop"></div>
+          <div class="opponent-row">
+            <input class="field__input" type="text" placeholder="Add coach by name" />
+            <button class="mini-add-btn" type="button">+</button>
+          </div>
         </div>
       `);
 
@@ -1695,44 +1957,91 @@ function buildLessonPlanFields(container) {
       const removeCourtBtn = card.querySelector(".game-card__header .remove-btn");
       if (removeCourtBtn) {
         removeCourtBtn.addEventListener("click", () => {
-          courts.splice(cIdx, 1);
-          renderCourts();
+          unassignedStudentIds.push(...court.students);
+          courts.splice(courts.indexOf(court), 1);
+          paintAll();
         });
       }
 
-      const studentsList = card.querySelector(".students-list");
-      const paintStudents = () => paintNameList(court.students, studentsList, "Student", paintStudents);
-      paintStudents();
-      card.querySelector('[data-role="add-student"]').addEventListener("click", () => {
-        court.students.push("");
-        paintStudents();
+      const studentsDrop = card.querySelector(".students-drop");
+      court.students.forEach((id) => studentsDrop.appendChild(studentChip(id)));
+      wireDropZone(studentsDrop, (studentId) => {
+        removeStudentFromEverywhere(studentId);
+        court.students.push(studentId);
+        paintAll();
       });
 
-      const coachesList = card.querySelector(".coaches-list");
-      const paintCoaches = () => paintNameList(court.coaches, coachesList, "Coach", paintCoaches);
-      paintCoaches();
-      card.querySelector('[data-role="add-coach"]').addEventListener("click", () => {
-        court.coaches.push("");
-        paintCoaches();
+      const coachesDrop = card.querySelector(".coaches-drop");
+      court.coaches.forEach((coach) => coachesDrop.appendChild(coachChip(coach)));
+      wireDropZone(coachesDrop, null, (coachId) => {
+        moveCoach(coachId, court.id);
+        paintAll();
+      });
+
+      const coachInput = card.querySelector(".opponent-row input");
+      const addCoachBtn = card.querySelector(".opponent-row .mini-add-btn");
+      const addCoach = () => {
+        const name = coachInput.value.trim();
+        if (!name) return;
+        court.coaches.push({ id: `coach-${coachIdCounter++}`, name });
+        coachInput.value = "";
+        paintAll();
+      };
+      addCoachBtn.addEventListener("click", addCoach);
+      coachInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          addCoach();
+        }
       });
 
       courtList.appendChild(card);
     });
   }
 
-  addCourtBtn.addEventListener("click", () => {
-    courts.push({ id: courtIdCounter++, name: `Court ${courts.length + 1}`, students: [""], coaches: [""] });
-    renderCourts();
+  function paintAll() {
+    paintUnassigned();
+    paintCourts();
+  }
+
+  autoAssignBtn.addEventListener("click", () => {
+    const allIds = Array.from(allLessonStudentIds());
+    if (allIds.length === 0) {
+      toast("Add students to this lesson before auto-assigning");
+      return;
+    }
+    if (courts.length === 0) {
+      toast("Add at least one court first");
+      return;
+    }
+    const sorted = allIds.slice().sort((a, b) => SKILL_LEVELS.indexOf(getStudent(a)?.level) - SKILL_LEVELS.indexOf(getStudent(b)?.level));
+    const n = courts.length;
+    const base = Math.floor(sorted.length / n);
+    const extra = sorted.length % n;
+    let idx = 0;
+    courts.forEach((court, i) => {
+      const count = base + (i < extra ? 1 : 0);
+      court.students = sorted.slice(idx, idx + count);
+      idx += count;
+    });
+    unassignedStudentIds = [];
+    paintAll();
+    toast("Students auto-assigned by skill level");
   });
 
-  renderCourts();
+  addCourtBtn.addEventListener("click", () => {
+    courts.push({ id: courtIdCounter++, name: `Court ${courts.length + 1}`, students: [], coaches: [] });
+    paintAll();
+  });
+
+  paintAll();
 
   return {
     getCourts: () =>
       courts.map((c) => ({
         name: c.name.trim() || "Court",
-        students: c.students.map((s) => s.trim()).filter(Boolean),
-        coaches: c.coaches.map((s) => s.trim()).filter(Boolean),
+        students: c.students.slice(),
+        coaches: c.coaches.map((co) => co.name),
       })),
   };
 }
@@ -2455,18 +2764,18 @@ function renderExercisePage(exerciseId) {
     wrap.appendChild(mistakesBlock);
   }
 
-  const isTimeMode = ex.workout.mode === "time";
+  const isTimeMode = content.workout.mode === "time";
   wrap.appendChild(el(`
     <div class="workout-box">
       <div class="workout-box__title">Training</div>
       <div class="workout-box__stats">
-        <div class="workout-stat"><div class="workout-stat__value">${ex.workout.sets}</div><div class="workout-stat__label">sets</div></div>
+        <div class="workout-stat"><div class="workout-stat__value">${content.workout.sets}</div><div class="workout-stat__label">sets</div></div>
         ${
           isTimeMode
-            ? `<div class="workout-stat"><div class="workout-stat__value">${ex.workout.durationSeconds}s</div><div class="workout-stat__label">per set</div></div>`
-            : `<div class="workout-stat"><div class="workout-stat__value">${ex.workout.shuttles}</div><div class="workout-stat__label">${workoutUnitLabel(ex.workout.mode)}</div></div>`
+            ? `<div class="workout-stat"><div class="workout-stat__value">${content.workout.durationSeconds}s</div><div class="workout-stat__label">per set</div></div>`
+            : `<div class="workout-stat"><div class="workout-stat__value">${content.workout.shuttles}</div><div class="workout-stat__label">${workoutUnitLabel(content.workout.mode)}</div></div>`
         }
-        <div class="workout-stat"><div class="workout-stat__value">${ex.workout.restSeconds}s</div><div class="workout-stat__label">rest</div></div>
+        <div class="workout-stat"><div class="workout-stat__value">${content.workout.restSeconds}s</div><div class="workout-stat__label">rest</div></div>
       </div>
       <button class="start-btn" id="start-training-btn">Start Training</button>
     </div>
@@ -2534,7 +2843,7 @@ function renderExercisePage(exerciseId) {
         toast(`Viewing: ${btn.dataset.angle} (demo)`);
       });
     });
-    wrap.querySelector("#start-training-btn").addEventListener("click", () => openTimer(ex));
+    wrap.querySelector("#start-training-btn").addEventListener("click", () => openTimer(content));
   });
 
   return wrap;
@@ -2824,6 +3133,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("schedule-form-close").addEventListener("click", closeScheduleForm);
   document.getElementById("details-form-close").addEventListener("click", closeDetailsForm);
   document.getElementById("merge-form-close").addEventListener("click", closeMergeForm);
+  document.getElementById("sets-form-close").addEventListener("click", closeSetsForm);
+  document.getElementById("student-form-close").addEventListener("click", closeStudentForm);
 });
 
 // ---------- Custom Drills ----------
@@ -3170,6 +3481,10 @@ function getEffectiveContent(ex) {
   return override ? { ...ex, ...override } : ex;
 }
 
+function getEffectiveWorkout(ex) {
+  return getEffectiveContent(ex).workout;
+}
+
 function openDetailsForm(ex) {
   document.getElementById("details-form-overlay").classList.add("is-open");
   renderDetailsForm(ex);
@@ -3224,13 +3539,130 @@ function renderDetailsForm(ex) {
         const idx = s.progress.customDrills.findIndex((d) => d.id === ex.id);
         if (idx >= 0) s.progress.customDrills[idx] = { ...s.progress.customDrills[idx], ...updates };
       } else {
-        s.progress.contentOverrides[ex.id] = updates;
+        s.progress.contentOverrides[ex.id] = { ...(s.progress.contentOverrides[ex.id] || {}), ...updates };
       }
     });
     closeDetailsForm();
     toast("Details saved");
     render();
   });
+}
+
+// ---------- Editing sets (any exercise: built-in or custom) ----------
+
+function openSetsForm(ex, onSaved) {
+  document.getElementById("sets-form-overlay").classList.add("is-open");
+  renderSetsForm(ex, onSaved);
+}
+
+function closeSetsForm() {
+  document.getElementById("sets-form-overlay").classList.remove("is-open");
+}
+
+function renderSetsForm(ex, onSaved) {
+  const body = document.getElementById("sets-form-body");
+  const w = getEffectiveWorkout(ex);
+  let mode = w.mode || "shuttles";
+
+  const view = el(`
+    <div class="drill-form">
+      <div class="drill-form__title">Edit Sets</div>
+      <div class="field__label" style="text-align:center;margin-bottom:20px;">${ex.name}</div>
+      <div class="field">
+        <label class="field__label">Sets</label>
+        <input class="field__input" id="sets-form-sets" type="number" min="1" value="${w.sets}" />
+      </div>
+      <div class="field">
+        <label class="field__label">Set type</label>
+        <div class="chip-row">
+          <button class="chip ${mode === "shuttles" ? "is-active" : ""}" id="sets-form-mode-shuttles" type="button">Shuttles</button>
+          <button class="chip ${mode === "reps" ? "is-active" : ""}" id="sets-form-mode-reps" type="button">Reps</button>
+          <button class="chip ${mode === "time" ? "is-active" : ""}" id="sets-form-mode-time" type="button">Time</button>
+        </div>
+      </div>
+      <div class="field" id="sets-form-shuttles-field" style="${mode === "shuttles" ? "" : "display:none"}">
+        <label class="field__label">Shuttles per set</label>
+        <input class="field__input" id="sets-form-shuttles" type="number" min="1" value="${mode === "shuttles" ? w.shuttles : 15}" />
+      </div>
+      <div class="field" id="sets-form-reps-field" style="${mode === "reps" ? "" : "display:none"}">
+        <label class="field__label">Reps per set</label>
+        <input class="field__input" id="sets-form-reps" type="number" min="1" value="${mode === "reps" ? w.shuttles : 12}" />
+      </div>
+      <div class="field" id="sets-form-duration-field" style="${mode === "time" ? "" : "display:none"}">
+        <label class="field__label">Seconds per set</label>
+        <input class="field__input" id="sets-form-duration" type="number" min="5" value="${mode === "time" ? w.durationSeconds : 30}" />
+      </div>
+      <div class="field">
+        <label class="field__label">Rest between sets (seconds)</label>
+        <input class="field__input" id="sets-form-rest" type="number" min="0" value="${w.restSeconds}" />
+      </div>
+      <button class="start-btn" id="sets-form-save">Save Sets</button>
+      ${!ex.isCustom && getContentOverride(ex.id)?.workout ? `<button class="see-all-btn" id="sets-form-reset">Reset to default sets</button>` : ""}
+    </div>
+  `);
+  body.replaceChildren(view);
+
+  const modeBtns = {
+    shuttles: view.querySelector("#sets-form-mode-shuttles"),
+    reps: view.querySelector("#sets-form-mode-reps"),
+    time: view.querySelector("#sets-form-mode-time"),
+  };
+  const modeFields = {
+    shuttles: view.querySelector("#sets-form-shuttles-field"),
+    reps: view.querySelector("#sets-form-reps-field"),
+    time: view.querySelector("#sets-form-duration-field"),
+  };
+  function selectMode(next) {
+    mode = next;
+    Object.keys(modeBtns).forEach((key) => {
+      modeBtns[key].classList.toggle("is-active", key === next);
+      modeFields[key].style.display = key === next ? "" : "none";
+    });
+  }
+  modeBtns.shuttles.addEventListener("click", () => selectMode("shuttles"));
+  modeBtns.reps.addEventListener("click", () => selectMode("reps"));
+  modeBtns.time.addEventListener("click", () => selectMode("time"));
+
+  view.querySelector("#sets-form-save").addEventListener("click", () => {
+    const sets = Math.max(1, parseInt(view.querySelector("#sets-form-sets").value, 10) || 1);
+    const restSeconds = Math.max(0, parseInt(view.querySelector("#sets-form-rest").value, 10) || 0);
+    let workout;
+    if (mode === "time") {
+      workout = { sets, mode: "time", durationSeconds: Math.max(5, parseInt(view.querySelector("#sets-form-duration").value, 10) || 5), restSeconds };
+    } else if (mode === "reps") {
+      workout = { sets, mode: "reps", shuttles: Math.max(1, parseInt(view.querySelector("#sets-form-reps").value, 10) || 1), restSeconds };
+    } else {
+      workout = { sets, mode: "shuttles", shuttles: Math.max(1, parseInt(view.querySelector("#sets-form-shuttles").value, 10) || 1), restSeconds };
+    }
+
+    updateState((s) => {
+      if (ex.isCustom) {
+        const idx = s.progress.customDrills.findIndex((d) => d.id === ex.id);
+        if (idx >= 0) s.progress.customDrills[idx] = { ...s.progress.customDrills[idx], workout };
+      } else {
+        s.progress.contentOverrides[ex.id] = { ...(s.progress.contentOverrides[ex.id] || {}), workout };
+      }
+    });
+    closeSetsForm();
+    toast("Sets updated");
+    if (onSaved) onSaved();
+  });
+
+  const resetBtn = view.querySelector("#sets-form-reset");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      updateState((s) => {
+        const override = s.progress.contentOverrides[ex.id];
+        if (!override) return;
+        const { workout, ...rest } = override;
+        if (Object.keys(rest).length > 0) s.progress.contentOverrides[ex.id] = rest;
+        else delete s.progress.contentOverrides[ex.id];
+      });
+      closeSetsForm();
+      toast("Reset to default sets");
+      if (onSaved) onSaved();
+    });
+  }
 }
 
 // ---------- Settings ----------
