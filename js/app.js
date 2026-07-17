@@ -165,6 +165,23 @@ function workoutSummaryLong(ex) {
   return w.mode === "time" ? `${w.sets} sets × ${w.durationSeconds}s` : `${w.sets} sets × ${w.shuttles} shuttles`;
 }
 
+// Mirrors the live timer's own math (work-phase duration + rest between sets,
+// no rest after the final set) so the estimate matches what actually happens.
+function estimateExerciseSeconds(ex) {
+  const w = ex.workout;
+  const workSeconds = w.mode === "time" ? w.durationSeconds : Math.max(20, Math.min(90, w.shuttles * 3));
+  return w.sets * workSeconds + Math.max(0, w.sets - 1) * w.restSeconds;
+}
+
+function formatDurationLong(totalSeconds) {
+  const totalMinutes = Math.round(totalSeconds / 60);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  if (h === 0) return `${m} min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
 function skillBumpFor(ex) {
   if (ex.categoryId === "footwork") return "footwork";
   if (ex.categoryId === "strength") return "speed";
@@ -988,12 +1005,44 @@ function renderSessionBuilder() {
     </div>
   `));
 
+  const estimateRow = el(`
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-card__value" id="session-estimate-duration">—</div>
+        <div class="stat-card__label">Estimated time to complete</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__value" id="session-estimate-finish">—</div>
+        <div class="stat-card__label">Estimated finish time</div>
+      </div>
+    </div>
+  `);
+  wrap.appendChild(estimateRow);
+
+  function updateEstimate() {
+    const totalSeconds = selectedIds.reduce((sum, id) => {
+      const ex = getExercise(id);
+      return ex ? sum + estimateExerciseSeconds(ex) : sum;
+    }, 0);
+    const durationEl = estimateRow.querySelector("#session-estimate-duration");
+    const finishEl = estimateRow.querySelector("#session-estimate-finish");
+    if (selectedIds.length === 0) {
+      durationEl.textContent = "—";
+      finishEl.textContent = "—";
+      return;
+    }
+    durationEl.textContent = formatDurationLong(totalSeconds);
+    finishEl.textContent = new Date(Date.now() + totalSeconds * 1000).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  }
+
   const selectedSection = el(`<div class="section"><div class="section__title">In this session</div></div>`);
   const selectedList = el(`<div class="exercise-list"></div>`);
   selectedSection.appendChild(selectedList);
   const selectedEmpty = el(`<div class="empty-state">No exercises added yet — search below to add some.</div>`);
   selectedSection.appendChild(selectedEmpty);
   wrap.appendChild(selectedSection);
+
+  let draggedId = null;
 
   function renderSelected() {
     selectedList.replaceChildren();
@@ -1002,21 +1051,52 @@ function renderSessionBuilder() {
       const ex = getExercise(id);
       if (!ex) return;
       const row = el(`
-        <button class="exercise-row">
+        <div class="exercise-row exercise-row--draggable" draggable="true">
+          <span class="drag-handle">☰</span>
           <div class="exercise-row__main">
             <div class="exercise-row__name">${ex.name}</div>
             <div class="exercise-row__meta">${getCategory(ex.categoryId).name}</div>
           </div>
-          <div class="exercise-row__arrow">✕</div>
-        </button>
+          <button class="remove-btn" type="button">✕</button>
+        </div>
       `);
-      row.addEventListener("click", () => {
+
+      row.querySelector(".remove-btn").addEventListener("click", () => {
         const idx = selectedIds.indexOf(id);
         if (idx >= 0) selectedIds.splice(idx, 1);
         renderSelected();
+        updateEstimate();
       });
+
+      row.addEventListener("dragstart", (e) => {
+        draggedId = id;
+        row.classList.add("is-dragging");
+        e.dataTransfer.effectAllowed = "move";
+      });
+      row.addEventListener("dragend", () => {
+        row.classList.remove("is-dragging");
+        draggedId = null;
+      });
+      row.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        if (draggedId && draggedId !== id) row.classList.add("drag-over");
+      });
+      row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
+      row.addEventListener("drop", (e) => {
+        e.preventDefault();
+        row.classList.remove("drag-over");
+        if (!draggedId || draggedId === id) return;
+        const fromIdx = selectedIds.indexOf(draggedId);
+        const toIdx = selectedIds.indexOf(id);
+        if (fromIdx === -1 || toIdx === -1) return;
+        selectedIds.splice(fromIdx, 1);
+        selectedIds.splice(toIdx, 0, draggedId);
+        renderSelected();
+      });
+
       selectedList.appendChild(row);
     });
+    updateEstimate();
   }
   renderSelected();
 

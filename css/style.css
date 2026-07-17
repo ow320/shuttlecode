@@ -444,9 +444,24 @@ button:active {
   padding: 14px 16px;
   text-align: left;
 }
+.exercise-row__main { flex: 1; min-width: 0; }
 .exercise-row__name { font-size: 14px; font-weight: 700; }
 .exercise-row__meta { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
 .exercise-row__arrow { color: var(--text-faint); font-size: 16px; }
+
+.exercise-row--draggable { cursor: grab; }
+.exercise-row--draggable.is-dragging { opacity: 0.4; }
+.exercise-row--draggable.drag-over { border-color: var(--accent); background: var(--bg-card-2); }
+.drag-handle { color: var(--text-faint); font-size: 16px; flex-shrink: 0; cursor: grab; touch-action: none; }
+.remove-btn {
+  flex-shrink: 0;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--bg-card-2);
+  color: var(--text-dim);
+  font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+}
+.remove-btn:hover { color: var(--danger); }
 
 .badge-done {
   display: inline-block;
