@@ -2640,10 +2640,16 @@ function getCategory(id) {
   return CATEGORIES.find((c) => c.id === id);
 }
 
+function getCustomDrills() {
+  return typeof STATE !== "undefined" ? STATE.progress.customDrills : [];
+}
+
 function getExercise(id) {
-  return EXERCISES.find((e) => e.id === id);
+  return EXERCISES.find((e) => e.id === id) || getCustomDrills().find((e) => e.id === id);
 }
 
 function getExercisesForCategory(categoryId) {
-  return EXERCISES.filter((e) => e.categoryId === categoryId);
+  const builtIn = EXERCISES.filter((e) => e.categoryId === categoryId);
+  const custom = getCustomDrills().filter((e) => e.categoryId === categoryId);
+  return [...builtIn, ...custom];
 }

@@ -345,6 +345,30 @@ button {
   vertical-align: middle;
 }
 
+.badge-custom {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.add-drill-btn {
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  border: 1px dashed var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 14px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
 .direction-grid { display: flex; flex-direction: column; gap: 12px; }
 .direction-card {
   display: flex;
@@ -533,6 +557,17 @@ button {
 .summary-stat__value { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .summary-stat__label { font-size: 11px; color: var(--text-dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
 
+.exp-pill {
+  display: inline-block;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 800;
+  padding: 8px 16px;
+  border-radius: 999px;
+  margin-bottom: 20px;
+}
+
 .timer-done__label { font-size: 13px; font-weight: 700; color: var(--text-dim); margin-bottom: 10px; }
 .timer-done .star-input { justify-content: center; margin-bottom: 18px; }
 .timer-done .notes-input { text-align: left; margin-bottom: 18px; }
@@ -561,6 +596,9 @@ button {
   color: var(--text-dim);
 }
 .chip.is-active { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+
+.drill-form { padding-top: 8px; }
+.drill-form__title { font-size: 20px; font-weight: 800; margin-bottom: 20px; text-align: center; }
 
 .toggle-row {
   display: flex; align-items: center; justify-content: space-between;

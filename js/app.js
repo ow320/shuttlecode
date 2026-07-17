@@ -70,6 +70,16 @@ function daysBetween(isoA, isoB) {
   return Math.round((b - a) / 86400000);
 }
 
+function workoutSummaryShort(ex) {
+  const w = ex.workout;
+  return w.mode === "time" ? `${w.sets}×${w.durationSeconds}s` : `${w.sets}×${w.shuttles}`;
+}
+
+function workoutSummaryLong(ex) {
+  const w = ex.workout;
+  return w.mode === "time" ? `${w.sets} sets × ${w.durationSeconds}s` : `${w.sets} sets × ${w.shuttles} shuttles`;
+}
+
 function skillBumpFor(ex) {
   if (ex.categoryId === "footwork") return "footwork";
   if (ex.categoryId === "strength") return "speed";
@@ -210,7 +220,7 @@ function renderOverview() {
   if (lastExercise) {
     const continueCard = el(`
       <button class="continue-card">
-        <div class="continue-card__label">Continue last workout</div>
+        <div class="continue-card__label">Continue last training</div>
         <div class="continue-card__name">${lastExercise.name}</div>
         <div class="continue-card__cta">Resume →</div>
       </button>
@@ -259,8 +269,11 @@ function renderOverview() {
           </div>
           <div class="activity-card__stats">
             <span>⏱ ${formatMMSS(rec.durationSeconds)}</span>
-            <span>🔁 ${rec.setsCompleted} sets · ${rec.totalShuttles ?? rec.totalReps ?? "—"} shuttles</span>
+            <span>🔁 ${rec.setsCompleted} sets · ${
+              rec.mode === "time" ? `${formatMMSS(rec.totalWorkSeconds || 0)} training` : `${rec.totalShuttles ?? rec.totalReps ?? "—"} shuttles`
+            }</span>
             <span>🔥 ${rec.calories} cal</span>
+            ${rec.expGained != null ? `<span>✨ +${rec.expGained % 1 === 0 ? rec.expGained : rec.expGained.toFixed(1)} exp</span>` : ""}
           </div>
         </button>
       `);
@@ -288,7 +301,7 @@ function skillBar(label, exp) {
     <div class="skill-bar">
       <div class="skill-bar__top">
         <span>${label}</span>
-        <span class="skill-bar__pct">Lv ${level} · ${pct}%</span>
+        <span class="skill-bar__pct">Lv ${level} · ${Math.round(pct)}%</span>
       </div>
       <div class="skill-bar__track"><div class="skill-bar__fill" style="width:${pct}%"></div></div>
     </div>
@@ -384,7 +397,7 @@ function exerciseCard(ex) {
       </div>
       <div class="exercise-card__body">
         <div class="exercise-card__name">${ex.name}</div>
-        <div class="exercise-card__meta">${stars(ex.difficulty)} · ${ex.workout.sets}×${ex.workout.shuttles}</div>
+        <div class="exercise-card__meta">${stars(ex.difficulty)} · ${workoutSummaryShort(ex)}</div>
       </div>
     </button>
   `);
@@ -430,13 +443,18 @@ function renderCategoryPage(categoryId) {
       list.appendChild(row);
     });
   } else {
+    if (categoryId === "drills") {
+      const addBtn = el(`<button class="add-drill-btn">+ Add Custom Drill</button>`);
+      addBtn.addEventListener("click", () => openDrillForm());
+      wrap.appendChild(addBtn);
+    }
     getExercisesForCategory(categoryId).forEach((ex) => {
       const done = STATE.progress.completedExerciseIds.includes(ex.id);
       const row = el(`
         <button class="exercise-row">
           <div class="exercise-row__main">
-            <div class="exercise-row__name">${ex.name} ${done ? '<span class="badge-done">✓ done</span>' : ""}</div>
-            <div class="exercise-row__meta">${stars(ex.difficulty)} · ${ex.workout.sets} sets × ${ex.workout.shuttles} shuttles</div>
+            <div class="exercise-row__name">${ex.name} ${done ? '<span class="badge-done">✓ done</span>' : ""} ${ex.isCustom ? '<span class="badge-custom">Custom</span>' : ""}</div>
+            <div class="exercise-row__meta">${ex.difficulty > 0 ? `${stars(ex.difficulty)} · ` : ""}${workoutSummaryLong(ex)}</div>
           </div>
           <div class="exercise-row__arrow">→</div>
         </button>
@@ -530,7 +548,7 @@ function renderShotDirectionPage(shotSlug, directionSlug) {
       <button class="exercise-row">
         <div class="exercise-row__main">
           <div class="exercise-row__name">${rowLabel} ${done ? '<span class="badge-done">✓ done</span>' : ""}</div>
-          <div class="exercise-row__meta">${stars(ex.difficulty)} · ${ex.workout.sets} sets × ${ex.workout.shuttles} shuttles</div>
+          <div class="exercise-row__meta">${stars(ex.difficulty)} · ${workoutSummaryLong(ex)}</div>
         </div>
         <div class="exercise-row__arrow">→</div>
       </button>
@@ -580,9 +598,9 @@ function renderExercisePage(exerciseId) {
   wrap.appendChild(el(`
     <div class="exercise-header">
       <div class="exercise-header__top">
-        <div class="exercise-header__name">${ex.name} ${done ? '<span class="badge-done">✓ Completed</span>' : ""}</div>
+        <div class="exercise-header__name">${ex.name} ${done ? '<span class="badge-done">✓ Completed</span>' : ""} ${ex.isCustom ? '<span class="badge-custom">Custom</span>' : ""}</div>
       </div>
-      <div class="exercise-header__difficulty">${stars(ex.difficulty)} ${difficultyLabel(ex.difficulty)}</div>
+      <div class="exercise-header__difficulty">${ex.difficulty > 0 ? `${stars(ex.difficulty)} ${difficultyLabel(ex.difficulty)}` : "Custom drill"}</div>
     </div>
   `));
 
@@ -593,31 +611,42 @@ function renderExercisePage(exerciseId) {
     </div>
   `));
 
-  wrap.appendChild(el(`
-    <div class="info-block">
-      <div class="info-block__title">Description</div>
-      <div class="info-block__text">${ex.description}</div>
-    </div>
-  `));
+  if (ex.description) {
+    wrap.appendChild(el(`
+      <div class="info-block">
+        <div class="info-block__title">Description</div>
+        <div class="info-block__text">${ex.description}</div>
+      </div>
+    `));
+  }
 
-  const pointsBlock = el(`<div class="info-block"><div class="info-block__title">Key Coaching Points</div></div>`);
-  const pointsList = el(`<div class="point-list point-list--good"></div>`);
-  ex.coachingPoints.forEach((p) => pointsList.appendChild(el(`<div class="point-item">✓ ${p}</div>`)));
-  pointsBlock.appendChild(pointsList);
-  wrap.appendChild(pointsBlock);
+  if (ex.coachingPoints.length > 0) {
+    const pointsBlock = el(`<div class="info-block"><div class="info-block__title">Key Coaching Points</div></div>`);
+    const pointsList = el(`<div class="point-list point-list--good"></div>`);
+    ex.coachingPoints.forEach((p) => pointsList.appendChild(el(`<div class="point-item">✓ ${p}</div>`)));
+    pointsBlock.appendChild(pointsList);
+    wrap.appendChild(pointsBlock);
+  }
 
-  const mistakesBlock = el(`<div class="info-block"><div class="info-block__title">Common Mistakes</div></div>`);
-  const mistakesList = el(`<div class="point-list point-list--bad"></div>`);
-  ex.commonMistakes.forEach((m) => mistakesList.appendChild(el(`<div class="point-item">❌ ${m}</div>`)));
-  mistakesBlock.appendChild(mistakesList);
-  wrap.appendChild(mistakesBlock);
+  if (ex.commonMistakes.length > 0) {
+    const mistakesBlock = el(`<div class="info-block"><div class="info-block__title">Common Mistakes</div></div>`);
+    const mistakesList = el(`<div class="point-list point-list--bad"></div>`);
+    ex.commonMistakes.forEach((m) => mistakesList.appendChild(el(`<div class="point-item">❌ ${m}</div>`)));
+    mistakesBlock.appendChild(mistakesList);
+    wrap.appendChild(mistakesBlock);
+  }
 
+  const isTimeMode = ex.workout.mode === "time";
   wrap.appendChild(el(`
     <div class="workout-box">
-      <div class="workout-box__title">Workout</div>
+      <div class="workout-box__title">Training</div>
       <div class="workout-box__stats">
         <div class="workout-stat"><div class="workout-stat__value">${ex.workout.sets}</div><div class="workout-stat__label">sets</div></div>
-        <div class="workout-stat"><div class="workout-stat__value">${ex.workout.shuttles}</div><div class="workout-stat__label">shuttles</div></div>
+        ${
+          isTimeMode
+            ? `<div class="workout-stat"><div class="workout-stat__value">${ex.workout.durationSeconds}s</div><div class="workout-stat__label">per set</div></div>`
+            : `<div class="workout-stat"><div class="workout-stat__value">${ex.workout.shuttles}</div><div class="workout-stat__label">shuttles</div></div>`
+        }
         <div class="workout-stat"><div class="workout-stat__value">${ex.workout.restSeconds}s</div><div class="workout-stat__label">rest</div></div>
       </div>
       <button class="start-btn" id="start-training-btn">Start Training</button>
@@ -649,6 +678,21 @@ function renderExercisePage(exerciseId) {
     }, 600);
   });
   wrap.appendChild(notesBlock);
+
+  if (ex.isCustom) {
+    const deleteBtn = el(`<button class="reset-btn">Delete custom drill</button>`);
+    deleteBtn.addEventListener("click", async () => {
+      const ok = await showConfirm(`Delete "${ex.name}"? This can't be undone.`);
+      if (ok) {
+        updateState((s) => {
+          s.progress.customDrills = s.progress.customDrills.filter((d) => d.id !== ex.id);
+        });
+        toast("Custom drill deleted");
+        navigate("/training/category/drills");
+      }
+    });
+    wrap.appendChild(deleteBtn);
+  }
 
   // Wire up video controls after mount
   queueMicrotask(() => {
@@ -689,14 +733,17 @@ function openTimer(ex) {
   const overlay = document.getElementById("timer-overlay");
   overlay.classList.add("is-open");
 
-  const workDuration = Math.max(20, Math.min(90, ex.workout.shuttles * 3));
+  const mode = ex.workout.mode === "time" ? "time" : "shuttles";
+  const workDuration = mode === "time" ? ex.workout.durationSeconds : Math.max(20, Math.min(90, ex.workout.shuttles * 3));
   const timerCtx = {
     ex,
+    mode,
     set: 1,
     totalSets: ex.workout.sets,
     phase: "work",
     shuttles: 0,
     totalShuttlesHit: 0,
+    totalWorkSeconds: 0,
     targetShuttles: ex.workout.shuttles,
     remaining: workDuration,
     workDuration,
@@ -721,7 +768,11 @@ function tickTimer(ctx) {
   ctx.remaining -= 1;
   if (ctx.remaining <= 0) {
     if (ctx.phase === "work") {
-      ctx.totalShuttlesHit += ctx.shuttles;
+      if (ctx.mode === "time") {
+        ctx.totalWorkSeconds += ctx.workDuration;
+      } else {
+        ctx.totalShuttlesHit += ctx.shuttles;
+      }
       if (ctx.set >= ctx.totalSets) {
         ctx.phase = "done";
         clearInterval(timerHandle);
@@ -751,11 +802,13 @@ function renderTimer(ctx) {
       <div class="timer-clock">${formatMMSS(Math.max(0, ctx.remaining))}</div>
       ${
         ctx.phase === "work"
-          ? `<div class="timer-reps">
-               <button class="rep-btn" id="shuttle-minus">−</button>
-               <div class="timer-reps__value">${ctx.shuttles} <span>/ ${ctx.targetShuttles} shuttles</span></div>
-               <button class="rep-btn" id="shuttle-plus">+</button>
-             </div>`
+          ? ctx.mode === "shuttles"
+            ? `<div class="timer-reps">
+                 <button class="rep-btn" id="shuttle-minus">−</button>
+                 <div class="timer-reps__value">${ctx.shuttles} <span>/ ${ctx.targetShuttles} shuttles</span></div>
+                 <button class="rep-btn" id="shuttle-plus">+</button>
+               </div>`
+            : `<div class="timer-rest-note">Keep training for the full set</div>`
           : `<div class="timer-rest-note">Rest up — next: Set ${ctx.set + 1}</div>`
       }
       <div class="timer-actions">
@@ -765,7 +818,7 @@ function renderTimer(ctx) {
     </div>
   `));
 
-  if (ctx.phase === "work") {
+  if (ctx.phase === "work" && ctx.mode === "shuttles") {
     body.querySelector("#shuttle-minus").addEventListener("click", () => {
       ctx.shuttles = Math.max(0, ctx.shuttles - 1);
       renderTimer(ctx);
@@ -792,11 +845,12 @@ function finishWorkout(ctx) {
   const cat = getCategory(ctx.ex.categoryId);
   const durationSeconds = Math.max(1, Math.round((Date.now() - ctx.startedAt) / 1000));
   const calories = Math.round((durationSeconds / 60) * cat.calPerMin);
+  const expGained = ctx.mode === "time" ? ctx.totalWorkSeconds / 60 : ctx.totalShuttlesHit * 0.5;
 
   const view = el(`
     <div class="timer-done">
       <div class="timer-done__check">✓</div>
-      <div class="timer-done__title">Workout Complete!</div>
+      <div class="timer-done__title">Training Complete!</div>
       <div class="timer-done__subtitle">${ctx.ex.name}</div>
 
       <div class="summary-grid">
@@ -808,15 +862,23 @@ function finishWorkout(ctx) {
           <div class="summary-stat__value">${ctx.totalSets}</div>
           <div class="summary-stat__label">Sets</div>
         </div>
-        <div class="summary-stat">
-          <div class="summary-stat__value">${ctx.totalShuttlesHit}</div>
-          <div class="summary-stat__label">Shuttles</div>
-        </div>
+        ${
+          ctx.mode === "time"
+            ? `<div class="summary-stat">
+                 <div class="summary-stat__value">${formatMMSS(ctx.totalWorkSeconds)}</div>
+                 <div class="summary-stat__label">Training Time</div>
+               </div>`
+            : `<div class="summary-stat">
+                 <div class="summary-stat__value">${ctx.totalShuttlesHit}</div>
+                 <div class="summary-stat__label">Shuttles</div>
+               </div>`
+        }
         <div class="summary-stat">
           <div class="summary-stat__value">${calories}</div>
           <div class="summary-stat__label">Est. calories</div>
         </div>
       </div>
+      <div class="exp-pill">✨ +${expGained % 1 === 0 ? expGained : expGained.toFixed(1)} exp</div>
 
       <div class="timer-done__label">How hard did that feel?</div>
       <div id="timer-done-stars"></div>
@@ -860,7 +922,10 @@ function finishWorkout(ctx) {
         timeLabel: new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }),
         durationSeconds,
         setsCompleted: ctx.totalSets,
-        totalShuttles: ctx.totalShuttlesHit,
+        mode: ctx.mode,
+        totalShuttles: ctx.mode === "shuttles" ? ctx.totalShuttlesHit : null,
+        totalWorkSeconds: ctx.mode === "time" ? ctx.totalWorkSeconds : null,
+        expGained,
         calories,
         effort: localRating,
       });
@@ -869,9 +934,9 @@ function finishWorkout(ctx) {
       if (localRating) s.progress.difficultyRatings[ctx.ex.id] = localRating;
       s.progress.lastExerciseId = ctx.ex.id;
 
-      // Each shuttle hit is worth 1% exp toward the relevant stat; levels stack indefinitely.
+      // 1 shuttle hit = 0.5 exp; 1 minute of timed training = 1 exp. Levels stack indefinitely.
       const bump = skillBumpFor(ctx.ex);
-      if (bump) s.progress.skills[bump] = (s.progress.skills[bump] || 0) + ctx.totalShuttlesHit;
+      if (bump) s.progress.skills[bump] = (s.progress.skills[bump] || 0) + expGained;
     });
     closeTimer();
     toast("Nice work! Session saved.");
@@ -881,10 +946,113 @@ function finishWorkout(ctx) {
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("timer-close").addEventListener("click", async () => {
-    const ok = await showConfirm("End this workout early? Progress for this session won't be saved.");
+    const ok = await showConfirm("End this training session early? Progress for this session won't be saved.");
     if (ok) closeTimer();
   });
+  document.getElementById("drill-form-close").addEventListener("click", closeDrillForm);
 });
+
+// ---------- Custom Drills ----------
+
+function openDrillForm() {
+  document.getElementById("drill-form-overlay").classList.add("is-open");
+  renderDrillForm();
+}
+
+function closeDrillForm() {
+  document.getElementById("drill-form-overlay").classList.remove("is-open");
+}
+
+function renderDrillForm() {
+  const body = document.getElementById("drill-form-body");
+  let mode = "shuttles";
+
+  const view = el(`
+    <div class="drill-form">
+      <div class="drill-form__title">New Custom Drill</div>
+      <div class="field">
+        <label class="field__label">Drill name</label>
+        <input class="field__input" id="drill-name" type="text" placeholder="e.g. Multi-shuttle feeding" />
+      </div>
+      <div class="field">
+        <label class="field__label">Sets</label>
+        <input class="field__input" id="drill-sets" type="number" min="1" value="5" />
+      </div>
+      <div class="field">
+        <label class="field__label">Set type</label>
+        <div class="chip-row">
+          <button class="chip is-active" id="drill-mode-shuttles" type="button">Shuttles</button>
+          <button class="chip" id="drill-mode-time" type="button">Time</button>
+        </div>
+      </div>
+      <div class="field" id="drill-shuttles-field">
+        <label class="field__label">Shuttles per set</label>
+        <input class="field__input" id="drill-shuttles" type="number" min="1" value="15" />
+      </div>
+      <div class="field" id="drill-duration-field" style="display:none">
+        <label class="field__label">Seconds per set</label>
+        <input class="field__input" id="drill-duration" type="number" min="5" value="30" />
+      </div>
+      <div class="field">
+        <label class="field__label">Rest between sets (seconds)</label>
+        <input class="field__input" id="drill-rest" type="number" min="0" value="60" />
+      </div>
+      <button class="start-btn" id="drill-save">Add Drill</button>
+    </div>
+  `);
+  body.replaceChildren(view);
+
+  const modeShuttlesBtn = view.querySelector("#drill-mode-shuttles");
+  const modeTimeBtn = view.querySelector("#drill-mode-time");
+  const shuttlesField = view.querySelector("#drill-shuttles-field");
+  const durationField = view.querySelector("#drill-duration-field");
+
+  modeShuttlesBtn.addEventListener("click", () => {
+    mode = "shuttles";
+    modeShuttlesBtn.classList.add("is-active");
+    modeTimeBtn.classList.remove("is-active");
+    shuttlesField.style.display = "";
+    durationField.style.display = "none";
+  });
+  modeTimeBtn.addEventListener("click", () => {
+    mode = "time";
+    modeTimeBtn.classList.add("is-active");
+    modeShuttlesBtn.classList.remove("is-active");
+    shuttlesField.style.display = "none";
+    durationField.style.display = "";
+  });
+
+  view.querySelector("#drill-save").addEventListener("click", () => {
+    const name = view.querySelector("#drill-name").value.trim();
+    if (!name) {
+      toast("Give your drill a name");
+      return;
+    }
+    const sets = Math.max(1, parseInt(view.querySelector("#drill-sets").value, 10) || 1);
+    const restSeconds = Math.max(0, parseInt(view.querySelector("#drill-rest").value, 10) || 0);
+    const workout =
+      mode === "shuttles"
+        ? { sets, mode: "shuttles", shuttles: Math.max(1, parseInt(view.querySelector("#drill-shuttles").value, 10) || 1), restSeconds }
+        : { sets, mode: "time", durationSeconds: Math.max(5, parseInt(view.querySelector("#drill-duration").value, 10) || 5), restSeconds };
+
+    const drill = {
+      id: `custom-${slugify(name)}-${Date.now()}`,
+      categoryId: "drills",
+      name,
+      isCustom: true,
+      difficulty: 0,
+      goal: "Custom drill — add your own notes and technique cues as you train.",
+      description: "",
+      coachingPoints: [],
+      commonMistakes: [],
+      workout,
+    };
+    updateState((s) => s.progress.customDrills.push(drill));
+    closeDrillForm();
+    toast("Custom drill added");
+    render();
+  });
+}
 
 // ---------- Settings ----------
 
