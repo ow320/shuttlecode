@@ -304,20 +304,51 @@ function renderCategoryPage(categoryId) {
   `));
 
   const list = el(`<div class="exercise-list"></div>`);
-  getExercisesForCategory(categoryId).forEach((ex) => {
+  const exercises = getExercisesForCategory(categoryId);
+
+  function exerciseRow(ex, label) {
     const done = STATE.progress.completedExerciseIds.includes(ex.id);
     const row = el(`
       <button class="exercise-row">
         <div class="exercise-row__main">
-          <div class="exercise-row__name">${ex.name} ${done ? '<span class="badge-done">✓ done</span>' : ""}</div>
+          <div class="exercise-row__name">${label} ${done ? '<span class="badge-done">✓ done</span>' : ""}</div>
           <div class="exercise-row__meta">${stars(ex.difficulty)} · ${ex.workout.sets} sets × ${ex.workout.reps} reps</div>
         </div>
         <div class="exercise-row__arrow">→</div>
       </button>
     `);
     row.addEventListener("click", () => navigate(`/training/exercise/${ex.id}`));
-    list.appendChild(row);
-  });
+    return row;
+  }
+
+  let i = 0;
+  while (i < exercises.length) {
+    const ex = exercises[i];
+    if (!ex.shotGroup) {
+      list.appendChild(exerciseRow(ex, ex.name));
+      i++;
+      continue;
+    }
+    const groupName = ex.shotGroup;
+    const groupItems = [];
+    while (i < exercises.length && exercises[i].shotGroup === groupName) {
+      groupItems.push(exercises[i]);
+      i++;
+    }
+    const doneCount = groupItems.filter((e) => STATE.progress.completedExerciseIds.includes(e.id)).length;
+    const group = el(`
+      <div class="shot-group">
+        <div class="shot-group__header">
+          <span class="shot-group__name">${groupName}</span>
+          <span class="shot-group__count">${doneCount}/${groupItems.length} done</span>
+        </div>
+      </div>
+    `);
+    const groupList = el(`<div class="shot-group__list"></div>`);
+    groupItems.forEach((item) => groupList.appendChild(exerciseRow(item, item.shortLabel)));
+    group.appendChild(groupList);
+    list.appendChild(group);
+  }
   wrap.appendChild(list);
 
   return wrap;
