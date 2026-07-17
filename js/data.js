@@ -1,4 +1,4 @@
-// Mock content for Badminton Pro Trainer.
+// Mock content for Shuttlecode.
 // videoUrl points to a public-domain sample clip used only as a placeholder
 // for the player UI — swap for real instructional footage later.
 const PLACEHOLDER_VIDEO = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
