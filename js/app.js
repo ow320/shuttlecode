@@ -128,6 +128,51 @@ function nextScheduledOccurrence() {
   return best;
 }
 
+// Whether two schedules landing on the same day would actually clash, based
+// on each session's time + target duration. Untimed ("all day") entries are
+// treated as conflicting with anything else on that day.
+function timeRangesOverlap(schedA, sessA, schedB, sessB) {
+  if (!schedA.time || !schedB.time) return true;
+  const toMinutes = (hhmm) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  };
+  const aStart = toMinutes(schedA.time);
+  const aEnd = aStart + (sessA?.targetMinutes || 60);
+  const bStart = toMinutes(schedB.time);
+  const bEnd = bStart + (sessB?.targetMinutes || 60);
+  return aStart < bEnd && bStart < aEnd;
+}
+
+// Cross-references a candidate schedule (not necessarily saved yet) against
+// every existing scheduled session — player training and coach lessons share
+// the same calendar, so this is what keeps the two from double-booking a
+// court/time slot. Expands repeat rules out 90 days looking for the first
+// clash. candidateSession only needs a targetMinutes field.
+function findScheduleConflict(candidateSched, candidateSession, excludeSchedId) {
+  const horizonDays = 90;
+  for (let i = 0; i < horizonDays; i++) {
+    const dateISO = addDaysISO(todayISO(), i);
+    if (!scheduleOccursOn(candidateSched, dateISO)) continue;
+    for (const sc of STATE.progress.scheduledSessions) {
+      if (sc.id === excludeSchedId) continue;
+      if (!scheduleOccursOn(sc, dateISO)) continue;
+      const otherSession = STATE.progress.trainingSessions.find((s) => s.id === sc.sessionId);
+      if (timeRangesOverlap(candidateSched, candidateSession, sc, otherSession)) {
+        return { sched: sc, session: otherSession, dateISO };
+      }
+    }
+  }
+  return null;
+}
+
+async function confirmScheduleConflict(conflict) {
+  const dateLabel = new Date(conflict.dateISO + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  const whoWhat = conflict.session ? conflict.session.name : "another session";
+  const timeSuffix = conflict.sched.time ? ` at ${formatTimeLabel(conflict.sched.time)}` : "";
+  return showConfirm(`This overlaps with "${whoWhat}" on ${dateLabel}${timeSuffix}. Schedule anyway?`);
+}
+
 // Levels 1-10 cost 100 exp each; every 10 levels after that, the cost per
 // level in that tier rises by another 10% (compounding), so leveling up
 // gets progressively harder at higher levels.
@@ -247,6 +292,13 @@ function relativeDateLabel(dateISO) {
   return new Date(dateISO).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function futureDateLabel(dateISO) {
+  const diff = daysBetween(todayISO(), dateISO);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Tomorrow";
+  return new Date(dateISO + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+}
+
 function greeting() {
   const h = new Date().getHours();
   if (h < 12) return "Good morning";
@@ -337,6 +389,123 @@ function applyTheme() {
   document.documentElement.setAttribute("data-theme", STATE.appSettings.theme);
 }
 
+// ---------- Mode (Player / Coach) ----------
+
+let currentMode = STATE.appSettings.defaultMode === "coach" ? "coach" : "player";
+
+function setMode(mode) {
+  currentMode = mode;
+  render();
+}
+
+function renderModeToggle() {
+  const row = el(`
+    <div class="chip-row mode-toggle-row">
+      <button class="chip ${currentMode === "player" ? "is-active" : ""}" id="mode-player" type="button">🏸 Player</button>
+      <button class="chip ${currentMode === "coach" ? "is-active" : ""}" id="mode-coach" type="button">📋 Coach</button>
+    </div>
+  `);
+  row.querySelector("#mode-player").addEventListener("click", () => setMode("player"));
+  row.querySelector("#mode-coach").addEventListener("click", () => setMode("coach"));
+  return row;
+}
+
+function lessonTypeLabel(lessonType) {
+  if (lessonType === "private") return "Private";
+  if (lessonType === "semiprivate") return "Semi-Private";
+  if (lessonType === "group") return "Group";
+  return "";
+}
+
+function lessonStudentsSummary(session) {
+  if (session.lessonType === "private") return session.students?.[0] || "Student TBD";
+  if (session.lessonType === "semiprivate") return (session.students || []).join(", ") || "Students TBD";
+  if (session.lessonType === "group") {
+    const courts = session.courts || [];
+    const totalStudents = courts.reduce((sum, c) => sum + c.students.length, 0);
+    return `${totalStudents} student${totalStudents === 1 ? "" : "s"} · ${courts.length} court${courts.length === 1 ? "" : "s"}`;
+  }
+  return "";
+}
+
+function renderLessonInfoBlock(session) {
+  const block = el(`<div class="section"><div class="section__title">${lessonTypeLabel(session.lessonType)} Lesson</div></div>`);
+  if (session.lessonType === "private" || session.lessonType === "semiprivate") {
+    const names = session.students || [];
+    block.appendChild(el(`<div class="info-block"><div class="info-block__text">👤 ${names.length ? names.join(", ") : "No students added"}</div></div>`));
+  } else if (session.lessonType === "group") {
+    const courts = session.courts || [];
+    const list = el(`<div class="exercise-list"></div>`);
+    courts.forEach((court) => {
+      list.appendChild(el(`
+        <div class="exercise-row">
+          <div class="exercise-row__main">
+            <div class="exercise-row__name">${court.name}</div>
+            <div class="exercise-row__meta">👤 ${court.students.join(", ") || "No students"}</div>
+            <div class="exercise-row__meta">🧑‍🏫 ${court.coaches.join(", ") || "No coach assigned"}</div>
+          </div>
+        </div>
+      `));
+    });
+    block.appendChild(list);
+  }
+  return block;
+}
+
+// Expands every lesson-tagged scheduled session's repeat rule out 120 days
+// and returns the soonest `limit` occurrences, earliest first.
+function upcomingLessonOccurrences(limit) {
+  const results = [];
+  const horizonDays = 120;
+  for (let i = 0; i < horizonDays; i++) {
+    const dateISO = addDaysISO(todayISO(), i);
+    STATE.progress.scheduledSessions.forEach((sc) => {
+      const session = STATE.progress.trainingSessions.find((s) => s.id === sc.sessionId);
+      if (!session || !session.lessonType) return;
+      if (!scheduleOccursOn(sc, dateISO)) return;
+      results.push({ dateISO, sched: sc, session });
+    });
+    if (results.length >= limit * 3) break;
+  }
+  results.sort((a, b) => {
+    const aKey = a.dateISO + (a.sched.time || "24:00");
+    const bKey = b.dateISO + (b.sched.time || "24:00");
+    return aKey < bKey ? -1 : aKey > bKey ? 1 : 0;
+  });
+  return results.slice(0, limit);
+}
+
+function renderCoachOverviewBody(wrap) {
+  const buildBtn = el(`<button class="add-drill-btn">+ Build Lesson</button>`);
+  buildBtn.addEventListener("click", () => navigate("/training/session/builder"));
+  wrap.appendChild(buildBtn);
+
+  const lessonsSection = el(`<div class="section"><div class="section__title">Upcoming Lessons</div></div>`);
+  const occurrences = upcomingLessonOccurrences(8);
+  if (occurrences.length === 0) {
+    lessonsSection.appendChild(el(`<div class="empty-state">No lessons scheduled yet. Build a lesson and add it to your calendar.</div>`));
+  } else {
+    occurrences.forEach((occ) => {
+      const row = el(`
+        <button class="exercise-row">
+          <div class="exercise-row__main">
+            <div class="exercise-row__name">${occ.session.name} <span class="badge-custom">${lessonTypeLabel(occ.session.lessonType)}</span></div>
+            <div class="exercise-row__meta">${futureDateLabel(occ.dateISO)}${occ.sched.time ? " · " + formatTimeLabel(occ.sched.time) : ""} · ${lessonStudentsSummary(occ.session)}</div>
+          </div>
+          <div class="exercise-row__arrow">→</div>
+        </button>
+      `);
+      row.addEventListener("click", () => navigate(`/training/session/${occ.session.id}`));
+      lessonsSection.appendChild(row);
+    });
+  }
+  wrap.appendChild(lessonsSection);
+
+  const calSection = el(`<div class="section"><div class="section__title">Coaching Calendar</div></div>`);
+  calSection.appendChild(renderCalendarWidget());
+  wrap.appendChild(calSection);
+}
+
 // ---------- Overview ----------
 
 function renderOverview() {
@@ -351,6 +520,13 @@ function renderOverview() {
       <div class="hero__name">${STATE.profile.name}</div>
     </div>
   `));
+
+  wrap.appendChild(renderModeToggle());
+
+  if (currentMode === "coach") {
+    renderCoachOverviewBody(wrap);
+    return wrap;
+  }
 
   if (lastExercise) {
     const continueCard = el(`
@@ -831,11 +1007,14 @@ function renderCategoryPage(categoryId) {
     } else {
       STATE.progress.trainingSessions.forEach((session) => {
         const isRunning = STATE.progress.activeSessionRun && STATE.progress.activeSessionRun.sessionId === session.id;
+        const meta = session.lessonType
+          ? `${lessonTypeLabel(session.lessonType)} · ${lessonStudentsSummary(session)}`
+          : `${session.exerciseIds.length} exercises · ${session.targetMinutes} min target`;
         const row = el(`
           <button class="exercise-row">
             <div class="exercise-row__main">
-              <div class="exercise-row__name">${session.name} ${isRunning ? '<span class="badge-custom">Running</span>' : ""}</div>
-              <div class="exercise-row__meta">${session.exerciseIds.length} exercises · ${session.targetMinutes} min target</div>
+              <div class="exercise-row__name">${session.lessonType ? "🎓 " : ""}${session.name} ${isRunning ? '<span class="badge-custom">Running</span>' : ""}</div>
+              <div class="exercise-row__meta">${meta}</div>
             </div>
             <div class="exercise-row__arrow">→</div>
           </button>
@@ -1072,6 +1251,8 @@ function renderSessionBuilder() {
   });
 
   const selectedIds = [];
+  let lessonType = null; // null | "private" | "semiprivate" | "group" — only used in coach mode
+  let lessonAccessor = null;
 
   trainingFields.appendChild(el(`
     <div class="field">
@@ -1085,6 +1266,50 @@ function renderSessionBuilder() {
       <input class="field__input" id="session-target" type="number" min="10" value="120" />
     </div>
   `));
+
+  if (currentMode === "coach") {
+    const lessonSection = el(`<div class="section"><div class="section__title">Lesson Type</div></div>`);
+    const lessonChipRow = el(`<div class="chip-row"></div>`);
+    const lessonFieldsContainer = el(`<div id="lesson-fields"></div>`);
+    const LESSON_TYPE_OPTIONS = [
+      { value: null, label: "Regular" },
+      { value: "private", label: "Private (1)" },
+      { value: "semiprivate", label: "Semi-Private (2-3)" },
+      { value: "group", label: "Group (5+)" },
+    ];
+
+    function paintLessonFields() {
+      lessonFieldsContainer.replaceChildren();
+      lessonAccessor = null;
+      if (lessonType === "private") {
+        lessonFieldsContainer.appendChild(el(`
+          <div class="field">
+            <label class="field__label">Student name</label>
+            <input class="field__input" id="lesson-student-solo" type="text" placeholder="Student name" />
+          </div>
+        `));
+      } else if (lessonType === "semiprivate") {
+        lessonAccessor = buildSemiPrivateFields(lessonFieldsContainer);
+      } else if (lessonType === "group") {
+        lessonAccessor = buildLessonPlanFields(lessonFieldsContainer);
+      }
+    }
+
+    LESSON_TYPE_OPTIONS.forEach((opt, idx) => {
+      const chip = el(`<button class="chip ${idx === 0 ? "is-active" : ""}" type="button">${opt.label}</button>`);
+      chip.addEventListener("click", () => {
+        lessonType = opt.value;
+        lessonChipRow.querySelectorAll(".chip").forEach((c) => c.classList.remove("is-active"));
+        chip.classList.add("is-active");
+        paintLessonFields();
+      });
+      lessonChipRow.appendChild(chip);
+    });
+
+    lessonSection.appendChild(lessonChipRow);
+    lessonSection.appendChild(lessonFieldsContainer);
+    trainingFields.appendChild(lessonSection);
+  }
 
   const estimateRow = el(`
     <div class="stat-row">
@@ -1281,7 +1506,7 @@ function renderSessionBuilder() {
   trainingFields.appendChild(repeatSection);
 
   const createBtn = el(`<button class="start-btn">Create Session</button>`);
-  createBtn.addEventListener("click", () => {
+  createBtn.addEventListener("click", async () => {
     const name = wrap.querySelector("#session-name").value.trim();
     if (!name) {
       toast("Give your session a name");
@@ -1295,13 +1520,56 @@ function renderSessionBuilder() {
       toast("Pick a start date for the schedule");
       return;
     }
+
+    let lessonPayload = {};
+    if (currentMode === "coach" && lessonType) {
+      if (lessonType === "private") {
+        const studentName = (wrap.querySelector("#lesson-student-solo")?.value || "").trim();
+        if (!studentName) {
+          toast("Enter the student's name");
+          return;
+        }
+        lessonPayload = { lessonType: "private", students: [studentName] };
+      } else if (lessonType === "semiprivate") {
+        const students = lessonAccessor ? lessonAccessor.getNames() : [];
+        if (students.length < 2) {
+          toast("Semi-private lessons need at least 2 students");
+          return;
+        }
+        lessonPayload = { lessonType: "semiprivate", students };
+      } else if (lessonType === "group") {
+        const courts = lessonAccessor ? lessonAccessor.getCourts() : [];
+        const validCourts = courts.filter((c) => c.students.length > 0);
+        if (validCourts.length === 0) {
+          toast("Add at least one court with students");
+          return;
+        }
+        lessonPayload = { lessonType: "group", courts: validCourts };
+      }
+    }
+
     const targetMinutes = Math.max(10, parseInt(wrap.querySelector("#session-target").value, 10) || 120);
+
+    if (scheduleEnabled) {
+      const candidateSched = {
+        startDate: scheduleFields.querySelector("#session-sched-date").value,
+        time: scheduleFields.querySelector("#session-sched-time").value || null,
+        repeatDays: repeatDays ? parseInt(repeatDays, 10) : null,
+      };
+      const conflict = findScheduleConflict(candidateSched, { targetMinutes }, null);
+      if (conflict) {
+        const proceed = await confirmScheduleConflict(conflict);
+        if (!proceed) return;
+      }
+    }
+
     const session = {
       id: `session-${slugify(name)}-${Date.now()}`,
       name,
       targetMinutes,
       exerciseIds: [...selectedIds],
       createdAt: Date.now(),
+      ...lessonPayload,
     };
     updateState((s) => {
       s.progress.trainingSessions.push(session);
@@ -1322,6 +1590,149 @@ function renderSessionBuilder() {
   trainingFields.appendChild(createBtn);
 
   return wrap;
+}
+
+// Renders 2-3 student-name fields for a semi-private lesson. Returns an
+// accessor so the caller can pull the cleaned names at save time.
+function buildSemiPrivateFields(container) {
+  const names = ["", ""];
+  const list = el(`<div class="opponent-list"></div>`);
+  container.appendChild(list);
+  const addBtn = el(`<button class="mini-add-btn" type="button">+ Add Student (max 3)</button>`);
+  container.appendChild(addBtn);
+
+  function paint() {
+    list.replaceChildren();
+    names.forEach((val, idx) => {
+      const row = el(`
+        <div class="opponent-row">
+          <input class="field__input" type="text" placeholder="Student ${idx + 1} name" value="${val}" />
+          ${names.length > 2 ? '<button class="remove-btn" type="button">✕</button>' : ""}
+        </div>
+      `);
+      const input = row.querySelector("input");
+      input.addEventListener("input", () => (names[idx] = input.value));
+      const removeBtn = row.querySelector(".remove-btn");
+      if (removeBtn) {
+        removeBtn.addEventListener("click", () => {
+          names.splice(idx, 1);
+          paint();
+        });
+      }
+      list.appendChild(row);
+    });
+    addBtn.style.display = names.length >= 3 ? "none" : "";
+  }
+  addBtn.addEventListener("click", () => {
+    if (names.length < 3) {
+      names.push("");
+      paint();
+    }
+  });
+  paint();
+
+  return { getNames: () => names.map((n) => n.trim()).filter(Boolean) };
+}
+
+// Renders the group-lesson plan builder: a list of courts, each with its own
+// student roster and assigned coach(es). Returns an accessor for cleaned data.
+function buildLessonPlanFields(container) {
+  let courtIdCounter = 0;
+  const courts = [{ id: courtIdCounter++, name: "Court 1", students: [""], coaches: [""] }];
+  const courtList = el(`<div class="game-list"></div>`);
+  container.appendChild(courtList);
+  const addCourtBtn = el(`<button class="add-drill-btn" type="button">+ Add Court</button>`);
+  container.appendChild(addCourtBtn);
+
+  function paintNameList(names, listEl, placeholderNoun, onChange) {
+    listEl.replaceChildren();
+    names.forEach((val, idx) => {
+      const row = el(`
+        <div class="opponent-row">
+          <input class="field__input" type="text" placeholder="${placeholderNoun} ${idx + 1} name" value="${val}" />
+          ${names.length > 1 ? '<button class="remove-btn" type="button">✕</button>' : ""}
+        </div>
+      `);
+      const input = row.querySelector("input");
+      input.addEventListener("input", () => {
+        names[idx] = input.value;
+      });
+      const removeBtn = row.querySelector(".remove-btn");
+      if (removeBtn) {
+        removeBtn.addEventListener("click", () => {
+          names.splice(idx, 1);
+          onChange();
+        });
+      }
+      listEl.appendChild(row);
+    });
+  }
+
+  function renderCourts() {
+    courtList.replaceChildren();
+    courts.forEach((court, cIdx) => {
+      const card = el(`
+        <div class="game-card">
+          <div class="game-card__header">
+            <input class="field__input court-name-input" type="text" value="${court.name}" style="font-weight:800;flex:1;margin-right:8px;" />
+            ${courts.length > 1 ? '<button class="remove-btn" type="button">✕</button>' : ""}
+          </div>
+          <label class="field__label">Students</label>
+          <div class="opponent-list students-list"></div>
+          <button class="mini-add-btn" type="button" data-role="add-student">+ Add Student</button>
+          <label class="field__label" style="margin-top:14px;">Coach(es)</label>
+          <div class="opponent-list coaches-list"></div>
+          <button class="mini-add-btn" type="button" data-role="add-coach">+ Add Coach</button>
+        </div>
+      `);
+
+      card.querySelector(".court-name-input").addEventListener("input", (e) => {
+        court.name = e.target.value;
+      });
+
+      const removeCourtBtn = card.querySelector(".game-card__header .remove-btn");
+      if (removeCourtBtn) {
+        removeCourtBtn.addEventListener("click", () => {
+          courts.splice(cIdx, 1);
+          renderCourts();
+        });
+      }
+
+      const studentsList = card.querySelector(".students-list");
+      const paintStudents = () => paintNameList(court.students, studentsList, "Student", paintStudents);
+      paintStudents();
+      card.querySelector('[data-role="add-student"]').addEventListener("click", () => {
+        court.students.push("");
+        paintStudents();
+      });
+
+      const coachesList = card.querySelector(".coaches-list");
+      const paintCoaches = () => paintNameList(court.coaches, coachesList, "Coach", paintCoaches);
+      paintCoaches();
+      card.querySelector('[data-role="add-coach"]').addEventListener("click", () => {
+        court.coaches.push("");
+        paintCoaches();
+      });
+
+      courtList.appendChild(card);
+    });
+  }
+
+  addCourtBtn.addEventListener("click", () => {
+    courts.push({ id: courtIdCounter++, name: `Court ${courts.length + 1}`, students: [""], coaches: [""] });
+    renderCourts();
+  });
+
+  renderCourts();
+
+  return {
+    getCourts: () =>
+      courts.map((c) => ({
+        name: c.name.trim() || "Court",
+        students: c.students.map((s) => s.trim()).filter(Boolean),
+        coaches: c.coaches.map((s) => s.trim()).filter(Boolean),
+      })),
+  };
 }
 
 function buildSparringFields(container) {
@@ -1532,6 +1943,10 @@ function renderSessionPage(sessionId) {
       <div class="category-banner__tagline">${session.exerciseIds.length} exercises · ${session.targetMinutes} min target</div>
     </div>
   `));
+
+  if (session.lessonType) {
+    wrap.appendChild(renderLessonInfoBlock(session));
+  }
 
   const isRunning = STATE.progress.activeSessionRun && STATE.progress.activeSessionRun.sessionId === sessionId;
 
@@ -2592,13 +3007,20 @@ function renderScheduleForm(sessionId) {
     repeatRow.appendChild(chip);
   });
 
-  view.querySelector("#sched-save").addEventListener("click", () => {
+  view.querySelector("#sched-save").addEventListener("click", async () => {
     const startDate = view.querySelector("#sched-date").value;
     if (!startDate) {
       toast("Pick a date");
       return;
     }
     const time = view.querySelector("#sched-time").value || null;
+    const candidateSched = { startDate, time, repeatDays: repeatDays ? parseInt(repeatDays, 10) : null };
+    const session = STATE.progress.trainingSessions.find((s) => s.id === sessionId);
+    const conflict = findScheduleConflict(candidateSched, session, null);
+    if (conflict) {
+      const proceed = await confirmScheduleConflict(conflict);
+      if (!proceed) return;
+    }
     const scheduled = {
       id: `sched-${Date.now()}`,
       sessionId,
@@ -2850,6 +3272,24 @@ function renderSettings() {
   skillField.appendChild(skillChips);
   profileSection.appendChild(skillField);
   wrap.appendChild(profileSection);
+
+  // Default view
+  const modeSection = el(`<div class="section"><div class="section__title">Default View</div><div class="field__label">Which Overview the app opens to</div></div>`);
+  const modeChips = el(`<div class="chip-row"></div>`);
+  [
+    { value: "player", label: "🏸 Player" },
+    { value: "coach", label: "📋 Coach" },
+  ].forEach((opt) => {
+    const chip = el(`<button class="chip ${STATE.appSettings.defaultMode === opt.value ? "is-active" : ""}">${opt.label}</button>`);
+    chip.addEventListener("click", () => {
+      updateState((s) => (s.appSettings.defaultMode = opt.value));
+      toast("Default view updated");
+      render();
+    });
+    modeChips.appendChild(chip);
+  });
+  modeSection.appendChild(modeChips);
+  wrap.appendChild(modeSection);
 
   // Training preferences
   const prefSection = el(`<div class="section"><div class="section__title">Training Preferences</div><div class="field__label">Training goals</div></div>`);

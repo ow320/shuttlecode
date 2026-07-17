@@ -68,6 +68,7 @@ function defaultState() {
       theme: "dark", // dark | light
       language: "English",
       videoQuality: "Auto",
+      defaultMode: "player", // player | coach — which Overview view the app opens to
     },
     progress: {
       sessionsCompleted: 12,
