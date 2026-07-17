@@ -1806,9 +1806,35 @@ function buildLessonPlanFields(container) {
   rosterField.appendChild(searchWrap);
   const searchResults = el(`<div class="exercise-list"></div>`);
   rosterField.appendChild(searchResults);
+  const quickAddRow = el(`
+    <div class="opponent-row">
+      <input class="field__input" type="text" placeholder="New student name" id="lesson-roster-quickadd" />
+      <button class="mini-add-btn" type="button">+</button>
+    </div>
+  `);
+  rosterField.appendChild(quickAddRow);
   container.appendChild(rosterField);
 
   const allLessonStudentIds = () => new Set([...unassignedStudentIds, ...courts.flatMap((c) => c.students)]);
+
+  const quickAddInput = quickAddRow.querySelector("input");
+  const quickAddStudent = () => {
+    const name = quickAddInput.value.trim();
+    if (!name) return;
+    const id = `student-${slugify(name)}-${Date.now()}`;
+    updateState((s) => s.progress.students.push({ id, name, level: SKILL_LEVELS[0], notes: "", createdAt: Date.now() }));
+    unassignedStudentIds.push(id);
+    quickAddInput.value = "";
+    paintAll();
+    toast(`${name} added to your student list`);
+  };
+  quickAddRow.querySelector(".mini-add-btn").addEventListener("click", quickAddStudent);
+  quickAddInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      quickAddStudent();
+    }
+  });
 
   const searchInput = searchWrap.querySelector("#lesson-roster-search");
   searchInput.addEventListener("input", () => {
