@@ -438,6 +438,9 @@ function renderLessonInfoBlock(session) {
     block.appendChild(el(`<div class="info-block"><div class="info-block__text">👤 ${names.length ? names.join(", ") : "No students added"}</div></div>`));
   } else if (session.lessonType === "group") {
     const courts = session.courts || [];
+    if (session.floaters && session.floaters.length > 0) {
+      block.appendChild(el(`<div class="info-block"><div class="info-block__text">🧭 Supervisor/Floater: ${session.floaters.join(", ")}</div></div>`));
+    }
     const list = el(`<div class="exercise-list"></div>`);
     courts.forEach((court) => {
       list.appendChild(el(`
@@ -1690,7 +1693,8 @@ function renderSessionBuilder() {
           toast("Add at least one court with students");
           return;
         }
-        lessonPayload = { lessonType: "group", courts: validCourts };
+        const floaters = lessonAccessor ? lessonAccessor.getFloaters() : [];
+        lessonPayload = { lessonType: "group", courts: validCourts, floaters };
       }
     }
 
@@ -1789,6 +1793,7 @@ function buildLessonPlanFields(container) {
   let coachIdCounter = 0;
   const courts = [{ id: courtIdCounter++, name: "Court 1", students: [], coaches: [] }];
   let unassignedStudentIds = [];
+  let floaters = []; // coaches supervising the whole lesson, not tied to a court
   let dragPayload = null; // { kind: "student"|"coach", id }
 
   const rosterField = el(`<div class="field"><label class="field__label">Add students to this lesson</label></div>`);
@@ -1854,6 +1859,25 @@ function buildLessonPlanFields(container) {
   const addCourtBtn = el(`<button class="add-drill-btn" type="button">+ Add Court</button>`);
   container.appendChild(addCourtBtn);
 
+  const floaterSection = el(`
+    <div class="section">
+      <div class="section__title">Supervisor / Floater</div>
+      <div class="field__label">Overseeing the whole lesson — not tied to a specific court</div>
+    </div>
+  `);
+  const floaterList = el(`<div class="chip-list"></div>`);
+  floaterSection.appendChild(floaterList);
+  const floaterEmpty = el(`<div class="empty-state">Drag a coach here, or add one below, to mark them as supervising the whole lesson.</div>`);
+  floaterSection.appendChild(floaterEmpty);
+  const floaterAddRow = el(`
+    <div class="opponent-row">
+      <input class="field__input" type="text" placeholder="Add supervisor/floater by name" />
+      <button class="mini-add-btn" type="button">+</button>
+    </div>
+  `);
+  floaterSection.appendChild(floaterAddRow);
+  container.appendChild(floaterSection);
+
   function studentChip(studentId) {
     const student = getStudent(studentId);
     const chip = el(`
@@ -1887,7 +1911,10 @@ function buildLessonPlanFields(container) {
     courts.forEach((c) => (c.students = c.students.filter((id) => id !== studentId)));
   }
 
-  function moveCoach(coachId, targetCourtId) {
+  // Removes a coach from whichever court (or the floater pool) currently
+  // holds them and returns the coach object, so it can be re-inserted
+  // wherever the drag/drop or button action actually wants it.
+  function removeCoachFromEverywhere(coachId) {
     let coach = null;
     courts.forEach((c) => {
       const idx = c.coaches.findIndex((co) => co.id === coachId);
@@ -1896,8 +1923,24 @@ function buildLessonPlanFields(container) {
         c.coaches.splice(idx, 1);
       }
     });
-    if (coach) {
-      const target = courts.find((c) => c.id === targetCourtId);
+    const fIdx = floaters.findIndex((co) => co.id === coachId);
+    if (fIdx >= 0) {
+      coach = floaters[fIdx];
+      floaters.splice(fIdx, 1);
+    }
+    return coach;
+  }
+
+  // destination is a court id, or the string "floater" for the
+  // supervisor/floater pool (a coach overseeing the whole lesson, not
+  // tied to any one court).
+  function moveCoachTo(coachId, destination) {
+    const coach = removeCoachFromEverywhere(coachId);
+    if (!coach) return;
+    if (destination === "floater") {
+      floaters.push(coach);
+    } else {
+      const target = courts.find((c) => c.id === destination);
       if (target) target.coaches.push(coach);
     }
   }
@@ -1974,7 +2017,7 @@ function buildLessonPlanFields(container) {
       const coachesDrop = card.querySelector(".coaches-drop");
       court.coaches.forEach((coach) => coachesDrop.appendChild(coachChip(coach)));
       wireDropZone(coachesDrop, null, (coachId) => {
-        moveCoach(coachId, court.id);
+        moveCoachTo(coachId, court.id);
         paintAll();
       });
 
@@ -1999,9 +2042,37 @@ function buildLessonPlanFields(container) {
     });
   }
 
+  function paintFloaters() {
+    floaterList.replaceChildren();
+    floaters.forEach((coach) => floaterList.appendChild(coachChip(coach)));
+    floaterEmpty.style.display = floaters.length === 0 ? "" : "none";
+  }
+  wireDropZone(floaterList, null, (coachId) => {
+    moveCoachTo(coachId, "floater");
+    paintAll();
+  });
+
+  const floaterInput = floaterAddRow.querySelector("input");
+  const floaterAddBtn = floaterAddRow.querySelector(".mini-add-btn");
+  const addFloater = () => {
+    const name = floaterInput.value.trim();
+    if (!name) return;
+    floaters.push({ id: `coach-${coachIdCounter++}`, name });
+    floaterInput.value = "";
+    paintAll();
+  };
+  floaterAddBtn.addEventListener("click", addFloater);
+  floaterInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addFloater();
+    }
+  });
+
   function paintAll() {
     paintUnassigned();
     paintCourts();
+    paintFloaters();
   }
 
   autoAssignBtn.addEventListener("click", () => {
@@ -2043,6 +2114,7 @@ function buildLessonPlanFields(container) {
         students: c.students.slice(),
         coaches: c.coaches.map((co) => co.name),
       })),
+    getFloaters: () => floaters.map((f) => f.name),
   };
 }
 
