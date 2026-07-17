@@ -379,19 +379,6 @@ function renderOverview() {
   statRow.querySelector(".stat-card").addEventListener("click", () => navigate("/history"));
   wrap.appendChild(statRow);
 
-  const h2hPlayers = headToHeadStats();
-  const h2hWins = h2hPlayers.reduce((sum, pl) => sum + pl.wins, 0);
-  const h2hLosses = h2hPlayers.reduce((sum, pl) => sum + pl.losses, 0);
-  const h2hCard = el(`
-    <button class="next-session-card">
-      <div class="next-session-card__label">🥊 Head to Head</div>
-      <div class="next-session-card__name">${h2hPlayers.length === 0 ? "Log a sparring session to get started" : `${h2hWins}-${h2hLosses} overall · ${h2hPlayers.length} opponent${h2hPlayers.length === 1 ? "" : "s"}`}</div>
-      <div class="next-session-card__when">View your record →</div>
-    </button>
-  `);
-  h2hCard.addEventListener("click", () => navigate("/head-to-head"));
-  wrap.appendChild(h2hCard);
-
   const calSection = el(`<div class="section"><div class="section__title">Training Calendar</div></div>`);
   const next = nextScheduledOccurrence();
   const nextSession = next ? STATE.progress.trainingSessions.find((s) => s.id === next.sched.sessionId) : null;
@@ -419,6 +406,21 @@ function renderOverview() {
   skillsSection.appendChild(skillBar("Net Game", p.skills.netGame));
   skillsSection.appendChild(skillBar("Speed", p.skills.speed));
   wrap.appendChild(skillsSection);
+
+  const h2hPlayers = headToHeadStats();
+  const h2hWins = h2hPlayers.reduce((sum, pl) => sum + pl.wins, 0);
+  const h2hLosses = h2hPlayers.reduce((sum, pl) => sum + pl.losses, 0);
+  const h2hSection = el(`<div class="section"></div>`);
+  const h2hCard = el(`
+    <button class="next-session-card">
+      <div class="next-session-card__label">🥊 Head to Head</div>
+      <div class="next-session-card__name">${h2hPlayers.length === 0 ? "Log a sparring session to get started" : `${h2hWins}-${h2hLosses} overall · ${h2hPlayers.length} opponent${h2hPlayers.length === 1 ? "" : "s"}`}</div>
+      <div class="next-session-card__when">View your record →</div>
+    </button>
+  `);
+  h2hCard.addEventListener("click", () => navigate("/head-to-head"));
+  h2hSection.appendChild(h2hCard);
+  wrap.appendChild(h2hSection);
 
   const recentSection = el(`<div class="section"><div class="section__title">Recent Activity</div></div>`);
   if (p.sessionHistory.length === 0) {
