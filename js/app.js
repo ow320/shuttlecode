@@ -155,6 +155,12 @@ function computeSkillLevel(totalExp) {
   }
 }
 
+// "shuttles" and "reps" modes both store their per-set count in workout.shuttles;
+// only the display label differs (shuttle hits vs. gym reps like squats/bench).
+function workoutUnitLabel(mode) {
+  return mode === "reps" ? "reps" : "shuttles";
+}
+
 function workoutSummaryShort(ex) {
   const w = ex.workout;
   return w.mode === "time" ? `${w.sets}×${w.durationSeconds}s` : `${w.sets}×${w.shuttles}`;
@@ -162,7 +168,7 @@ function workoutSummaryShort(ex) {
 
 function workoutSummaryLong(ex) {
   const w = ex.workout;
-  return w.mode === "time" ? `${w.sets} sets × ${w.durationSeconds}s` : `${w.sets} sets × ${w.shuttles} shuttles`;
+  return w.mode === "time" ? `${w.sets} sets × ${w.durationSeconds}s` : `${w.sets} sets × ${w.shuttles} ${workoutUnitLabel(w.mode)}`;
 }
 
 // Mirrors the live timer's own math (work-phase duration + rest between sets,
@@ -260,9 +266,12 @@ function parseHash() {
   if (parts[0] === "training" && parts[1] === "shot") return { view: "shot", shot: parts[2] };
   if (parts[0] === "training" && parts[1] === "session" && parts[2] === "builder") return { view: "sessionBuilder" };
   if (parts[0] === "training" && parts[1] === "session") return { view: "session", id: parts[2] };
+  if (parts[0] === "training" && parts[1] === "sparring") return { view: "sparringSession", id: parts[2] };
   if (parts[0] === "training") return { view: "training" };
   if (parts[0] === "history" && parts[1]) return { view: "historyDetail", id: parts[1] };
   if (parts[0] === "history") return { view: "history" };
+  if (parts[0] === "head-to-head" && parts[1]) return { view: "headToHeadDetail", name: parts[1] };
+  if (parts[0] === "head-to-head") return { view: "headToHead" };
   if (parts[0] === "settings") return { view: "settings" };
   return { view: "overview" };
 }
@@ -290,8 +299,11 @@ function render() {
   else if (route.view === "exercise") screen.replaceChildren(renderExercisePage(route.id));
   else if (route.view === "sessionBuilder") screen.replaceChildren(renderSessionBuilder());
   else if (route.view === "session") screen.replaceChildren(renderSessionPage(route.id));
+  else if (route.view === "sparringSession") screen.replaceChildren(renderSparringSessionPage(route.id));
   else if (route.view === "history") screen.replaceChildren(renderHistoryPage());
   else if (route.view === "historyDetail") screen.replaceChildren(renderHistoryDetailPage(route.id));
+  else if (route.view === "headToHead") screen.replaceChildren(renderHeadToHeadPage());
+  else if (route.view === "headToHeadDetail") screen.replaceChildren(renderHeadToHeadDetailPage(route.name));
   else if (route.view === "settings") screen.replaceChildren(renderSettings());
 
   updateNavActive(route.view);
@@ -307,8 +319,11 @@ function updateNavActive(view) {
     exercise: "training",
     sessionBuilder: "training",
     session: "training",
+    sparringSession: "training",
     history: "overview",
     historyDetail: "overview",
+    headToHead: "overview",
+    headToHeadDetail: "overview",
     settings: "settings",
   };
   document.querySelectorAll(".nav-item").forEach((btn) => {
@@ -334,7 +349,6 @@ function renderOverview() {
     <div class="hero">
       <div class="hero__eyebrow">${greeting()},</div>
       <div class="hero__name">${STATE.profile.name}</div>
-      <div class="hero__goal">🎯 Your goal today: <strong>${lastExercise ? lastExercise.goal : "Improve your backhand consistency"}</strong></div>
     </div>
   `));
 
@@ -364,6 +378,19 @@ function renderOverview() {
   `);
   statRow.querySelector(".stat-card").addEventListener("click", () => navigate("/history"));
   wrap.appendChild(statRow);
+
+  const h2hPlayers = headToHeadStats();
+  const h2hWins = h2hPlayers.reduce((sum, pl) => sum + pl.wins, 0);
+  const h2hLosses = h2hPlayers.reduce((sum, pl) => sum + pl.losses, 0);
+  const h2hCard = el(`
+    <button class="next-session-card">
+      <div class="next-session-card__label">🥊 Head to Head</div>
+      <div class="next-session-card__name">${h2hPlayers.length === 0 ? "Log a sparring session to get started" : `${h2hWins}-${h2hLosses} overall · ${h2hPlayers.length} opponent${h2hPlayers.length === 1 ? "" : "s"}`}</div>
+      <div class="next-session-card__when">View your record →</div>
+    </button>
+  `);
+  h2hCard.addEventListener("click", () => navigate("/head-to-head"));
+  wrap.appendChild(h2hCard);
 
   const calSection = el(`<div class="section"><div class="section__title">Training Calendar</div></div>`);
   const next = nextScheduledOccurrence();
@@ -442,7 +469,9 @@ function activityCard(rec, onClick) {
           rec.mode === "session"
             ? `<span>📋 ${rec.setsCompleted} exercise${rec.setsCompleted === 1 ? "" : "s"} done</span>`
             : `<span>🔁 ${rec.setsCompleted} sets · ${
-                rec.mode === "time" ? `${formatMMSS(rec.totalWorkSeconds || 0)} training` : `${rec.totalShuttles ?? rec.totalReps ?? "—"} shuttles`
+                rec.mode === "time"
+                  ? `${formatMMSS(rec.totalWorkSeconds || 0)} training`
+                  : `${rec.totalShuttles ?? rec.totalReps ?? "—"} ${workoutUnitLabel(rec.mode)}`
               }</span>`
         }
         <span>🔥 ${rec.calories} cal</span>
@@ -527,7 +556,7 @@ function renderHistoryDetailPage(entryId) {
     grid.appendChild(el(`
       <div class="summary-stat">
         <div class="summary-stat__value">${rec.totalShuttles ?? rec.totalReps ?? "—"}</div>
-        <div class="summary-stat__label">Shuttles</div>
+        <div class="summary-stat__label">${workoutUnitLabel(rec.mode)[0].toUpperCase()}${workoutUnitLabel(rec.mode).slice(1)}</div>
       </div>
     `));
   }
@@ -795,7 +824,7 @@ function renderCategoryPage(categoryId) {
     addBtn.addEventListener("click", () => navigate("/training/session/builder"));
     wrap.appendChild(addBtn);
 
-    if (STATE.progress.trainingSessions.length === 0) {
+    if (STATE.progress.trainingSessions.length === 0 && STATE.progress.sparringSessions.length === 0) {
       list.appendChild(el(`<div class="empty-state">No training sessions yet. Build one to compile drills, strength work, and feeding drills into a single timed practice.</div>`));
     } else {
       STATE.progress.trainingSessions.forEach((session) => {
@@ -812,8 +841,26 @@ function renderCategoryPage(categoryId) {
         row.addEventListener("click", () => navigate(`/training/session/${session.id}`));
         list.appendChild(row);
       });
+      STATE.progress.sparringSessions.forEach((session) => {
+        const gameCount = session.games.length;
+        const row = el(`
+          <button class="exercise-row">
+            <div class="exercise-row__main">
+              <div class="exercise-row__name">🥊 ${session.name}</div>
+              <div class="exercise-row__meta">${gameCount} game${gameCount === 1 ? "" : "s"} · ${relativeDateLabel(session.dateISO)}</div>
+            </div>
+            <div class="exercise-row__arrow">→</div>
+          </button>
+        `);
+        row.addEventListener("click", () => navigate(`/training/sparring/${session.id}`));
+        list.appendChild(row);
+      });
     }
   } else if (categoryId === "technique") {
+    const addBtn = el(`<button class="add-drill-btn">+ Add Custom Technique</button>`);
+    addBtn.addEventListener("click", () => openDrillForm(undefined, undefined, "technique"));
+    wrap.appendChild(addBtn);
+
     getShotGroups().forEach((group) => {
       const doneCount = group.exercises.filter((e) => STATE.progress.completedExerciseIds.includes(e.id)).length;
       const row = el(`
@@ -828,10 +875,29 @@ function renderCategoryPage(categoryId) {
       row.addEventListener("click", () => navigate(`/training/shot/${group.slug}`));
       list.appendChild(row);
     });
+
+    const customInCategory = getExercisesForCategory("technique").filter((ex) => ex.isCustom);
+    if (customInCategory.length > 0) {
+      list.appendChild(el(`<div class="section__title" style="margin-top:16px">Custom Techniques</div>`));
+      customInCategory.forEach((ex) => {
+        const done = STATE.progress.completedExerciseIds.includes(ex.id);
+        const row = el(`
+          <button class="exercise-row">
+            <div class="exercise-row__main">
+              <div class="exercise-row__name">${ex.name} ${done ? '<span class="badge-done">✓ done</span>' : ""} <span class="badge-custom">Custom</span></div>
+              <div class="exercise-row__meta">${workoutSummaryLong(ex)}</div>
+            </div>
+            <div class="exercise-row__arrow">→</div>
+          </button>
+        `);
+        row.addEventListener("click", () => navigate(`/training/exercise/${ex.id}`));
+        list.appendChild(row);
+      });
+    }
   } else {
-    if (categoryId === "drills") {
-      const addBtn = el(`<button class="add-drill-btn">+ Add Custom Drill</button>`);
-      addBtn.addEventListener("click", () => openDrillForm());
+    if (CUSTOM_ITEM_NOUN[categoryId]) {
+      const addBtn = el(`<button class="add-drill-btn">+ Add Custom ${CUSTOM_ITEM_NOUN[categoryId]}</button>`);
+      addBtn.addEventListener("click", () => openDrillForm(undefined, undefined, categoryId));
       wrap.appendChild(addBtn);
     }
     getExercisesForCategory(categoryId).forEach((ex) => {
@@ -850,6 +916,12 @@ function renderCategoryPage(categoryId) {
     });
   }
   wrap.appendChild(list);
+
+  if (["technique", "footwork", "drills", "strength"].includes(categoryId)) {
+    const mergeBtn = el(`<button class="see-all-btn">Merge duplicate custom entries…</button>`);
+    mergeBtn.addEventListener("click", () => openMergeForm(categoryId));
+    wrap.appendChild(mergeBtn);
+  }
 
   return wrap;
 }
@@ -958,22 +1030,54 @@ function renderSessionBuilder() {
   back.addEventListener("click", () => navigate("/training/category/sessions"));
   wrap.appendChild(back);
 
-  wrap.appendChild(el(`
+  const header = el(`
     <div class="page-header">
-      <div class="page-header__title">Build Training Session</div>
-      <div class="page-header__subtitle">Compile drills, strength work, and feeding drills into one timed practice</div>
+      <div class="page-header__title" id="session-builder-title">Build Training Session</div>
+      <div class="page-header__subtitle" id="session-builder-subtitle">Compile drills, strength work, and feeding drills into one timed practice</div>
     </div>
-  `));
+  `);
+  wrap.appendChild(header);
+
+  const typeToggle = el(`
+    <div class="chip-row mode-toggle-row">
+      <button class="chip is-active" id="session-type-training" type="button">Training</button>
+      <button class="chip" id="session-type-sparring" type="button">Sparring</button>
+    </div>
+  `);
+  wrap.appendChild(typeToggle);
+
+  const trainingFields = el(`<div id="training-fields"></div>`);
+  wrap.appendChild(trainingFields);
+  const sparringFields = el(`<div id="sparring-fields" style="display:none"></div>`);
+  wrap.appendChild(sparringFields);
+  buildSparringFields(sparringFields);
+
+  typeToggle.querySelector("#session-type-training").addEventListener("click", () => {
+    typeToggle.querySelectorAll(".chip").forEach((c) => c.classList.remove("is-active"));
+    typeToggle.querySelector("#session-type-training").classList.add("is-active");
+    trainingFields.style.display = "";
+    sparringFields.style.display = "none";
+    header.querySelector("#session-builder-title").textContent = "Build Training Session";
+    header.querySelector("#session-builder-subtitle").textContent = "Compile drills, strength work, and feeding drills into one timed practice";
+  });
+  typeToggle.querySelector("#session-type-sparring").addEventListener("click", () => {
+    typeToggle.querySelectorAll(".chip").forEach((c) => c.classList.remove("is-active"));
+    typeToggle.querySelector("#session-type-sparring").classList.add("is-active");
+    trainingFields.style.display = "none";
+    sparringFields.style.display = "";
+    header.querySelector("#session-builder-title").textContent = "Log Sparring Match";
+    header.querySelector("#session-builder-subtitle").textContent = "Track opponents, game duration, and scores as you play";
+  });
 
   const selectedIds = [];
 
-  wrap.appendChild(el(`
+  trainingFields.appendChild(el(`
     <div class="field">
       <label class="field__label">Session name</label>
       <input class="field__input" id="session-name" type="text" placeholder="e.g. Saturday morning practice" />
     </div>
   `));
-  wrap.appendChild(el(`
+  trainingFields.appendChild(el(`
     <div class="field">
       <label class="field__label">Target duration (minutes)</label>
       <input class="field__input" id="session-target" type="number" min="10" value="120" />
@@ -992,7 +1096,7 @@ function renderSessionBuilder() {
       </div>
     </div>
   `);
-  wrap.appendChild(estimateRow);
+  trainingFields.appendChild(estimateRow);
 
   function updateEstimate() {
     const totalSeconds = selectedIds.reduce((sum, id) => {
@@ -1015,7 +1119,7 @@ function renderSessionBuilder() {
   selectedSection.appendChild(selectedList);
   const selectedEmpty = el(`<div class="empty-state">No exercises added yet — search below to add some.</div>`);
   selectedSection.appendChild(selectedEmpty);
-  wrap.appendChild(selectedSection);
+  trainingFields.appendChild(selectedSection);
 
   let draggedId = null;
 
@@ -1096,7 +1200,7 @@ function renderSessionBuilder() {
   searchSection.appendChild(searchWrap);
   const searchResults = el(`<div class="exercise-list"></div>`);
   searchSection.appendChild(searchResults);
-  wrap.appendChild(searchSection);
+  trainingFields.appendChild(searchSection);
 
   const searchInput = searchWrap.querySelector("#session-search");
   searchInput.addEventListener("input", () => {
@@ -1134,7 +1238,7 @@ function renderSessionBuilder() {
       renderSelected();
     });
   });
-  wrap.appendChild(createExerciseBtn);
+  trainingFields.appendChild(createExerciseBtn);
 
   const repeatSection = el(`<div class="section"><div class="section__title">Repeat</div></div>`);
   let scheduleEnabled = false;
@@ -1172,7 +1276,7 @@ function renderSessionBuilder() {
     });
     repeatRow.appendChild(chip);
   });
-  wrap.appendChild(repeatSection);
+  trainingFields.appendChild(repeatSection);
 
   const createBtn = el(`<button class="start-btn">Create Session</button>`);
   createBtn.addEventListener("click", () => {
@@ -1213,9 +1317,198 @@ function renderSessionBuilder() {
     toast(scheduleEnabled ? "Training session created and scheduled" : "Training session created");
     navigate(`/training/session/${session.id}`);
   });
-  wrap.appendChild(createBtn);
+  trainingFields.appendChild(createBtn);
 
   return wrap;
+}
+
+function buildSparringFields(container) {
+  container.appendChild(el(`
+    <div class="field">
+      <label class="field__label">Target duration (minutes)</label>
+      <input class="field__input" id="sparring-target" type="number" min="1" value="60" />
+    </div>
+  `));
+
+  const opponents = [""];
+  let gameIdCounter = 0;
+  const games = [{ id: gameIdCounter++, opponentIdx: 0, seconds: 0, running: false, startedAt: null, intervalId: null }];
+
+  const opponentSection = el(`<div class="section"><div class="section__title">Opponent(s)</div></div>`);
+  const opponentList = el(`<div class="opponent-list"></div>`);
+  opponentSection.appendChild(opponentList);
+  const addOpponentBtn = el(`<button class="add-drill-btn" type="button">+ Add Another Opponent</button>`);
+  opponentSection.appendChild(addOpponentBtn);
+  container.appendChild(opponentSection);
+
+  const gameSection = el(`<div class="section"><div class="section__title">Games</div></div>`);
+  const gameList = el(`<div class="game-list"></div>`);
+  gameSection.appendChild(gameList);
+  const addGameBtn = el(`<button class="add-drill-btn" type="button">+ Add Game</button>`);
+  gameSection.appendChild(addGameBtn);
+  container.appendChild(gameSection);
+
+  function opponentLabel(idx) {
+    return opponents[idx] && opponents[idx].trim() ? opponents[idx].trim() : `Opponent ${idx + 1}`;
+  }
+
+  function renderOpponents() {
+    opponentList.replaceChildren();
+    opponents.forEach((name, idx) => {
+      const row = el(`
+        <div class="opponent-row">
+          <input class="field__input" type="text" placeholder="Opponent ${idx + 1} name" value="${name}" />
+          ${opponents.length > 1 ? '<button class="remove-btn" type="button">✕</button>' : ""}
+        </div>
+      `);
+      const input = row.querySelector("input");
+      input.addEventListener("input", () => {
+        opponents[idx] = input.value;
+        renderGames();
+      });
+      const removeBtn = row.querySelector(".remove-btn");
+      if (removeBtn) {
+        removeBtn.addEventListener("click", () => {
+          opponents.splice(idx, 1);
+          games.forEach((g) => {
+            if (g.opponentIdx >= opponents.length) g.opponentIdx = opponents.length - 1;
+          });
+          renderOpponents();
+          renderGames();
+        });
+      }
+      opponentList.appendChild(row);
+    });
+  }
+
+  function renderGames() {
+    gameList.replaceChildren();
+    games.forEach((game, idx) => {
+      const row = el(`
+        <div class="game-card" id="game-row-${game.id}">
+          <div class="game-card__header">
+            <span class="game-card__title">Game ${idx + 1}</span>
+            ${games.length > 1 ? '<button class="remove-btn" type="button">✕</button>' : ""}
+          </div>
+          ${
+            opponents.length > 1
+              ? `<div class="field"><label class="field__label">Opponent</label><select class="field__input opponent-select"></select></div>`
+              : ""
+          }
+          <div class="stopwatch">
+            <span class="stopwatch__time">${formatMMSS(game.seconds)}</span>
+            <button class="stopwatch__btn" type="button">${game.running ? "Stop" : "Start"}</button>
+          </div>
+          <div class="score-row">
+            <div class="field">
+              <label class="field__label">Your score</label>
+              <input class="field__input" type="number" min="0" value="${game.myScore ?? ""}" />
+            </div>
+            <div class="field">
+              <label class="field__label">${opponentLabel(game.opponentIdx)} score</label>
+              <input class="field__input" type="number" min="0" value="${game.oppScore ?? ""}" />
+            </div>
+          </div>
+        </div>
+      `);
+
+      const select = row.querySelector(".opponent-select");
+      if (select) {
+        opponents.forEach((_, oIdx) => select.appendChild(el(`<option value="${oIdx}">${opponentLabel(oIdx)}</option>`)));
+        select.value = String(game.opponentIdx);
+        select.addEventListener("change", () => {
+          game.opponentIdx = parseInt(select.value, 10) || 0;
+          renderGames();
+        });
+      }
+
+      const stopwatchBtn = row.querySelector(".stopwatch__btn");
+      stopwatchBtn.addEventListener("click", () => {
+        if (game.running) {
+          game.running = false;
+          clearInterval(game.intervalId);
+          const btn = document.querySelector(`#game-row-${game.id} .stopwatch__btn`);
+          if (btn) btn.textContent = "Start";
+        } else {
+          game.running = true;
+          game.startedAt = Date.now() - game.seconds * 1000;
+          const btn = document.querySelector(`#game-row-${game.id} .stopwatch__btn`);
+          if (btn) btn.textContent = "Stop";
+          game.intervalId = setInterval(() => {
+            game.seconds = Math.floor((Date.now() - game.startedAt) / 1000);
+            const timeEl = document.querySelector(`#game-row-${game.id} .stopwatch__time`);
+            if (timeEl) timeEl.textContent = formatMMSS(game.seconds);
+            else clearInterval(game.intervalId);
+          }, 1000);
+        }
+      });
+
+      const scoreInputs = row.querySelectorAll(".score-row .field__input");
+      scoreInputs[0].addEventListener("input", () => (game.myScore = scoreInputs[0].value));
+      scoreInputs[1].addEventListener("input", () => (game.oppScore = scoreInputs[1].value));
+
+      const removeBtn = row.querySelector(".game-card__header .remove-btn");
+      if (removeBtn) {
+        removeBtn.addEventListener("click", () => {
+          if (game.intervalId) clearInterval(game.intervalId);
+          const gIdx = games.indexOf(game);
+          if (gIdx >= 0) games.splice(gIdx, 1);
+          renderGames();
+        });
+      }
+
+      gameList.appendChild(row);
+    });
+  }
+
+  addOpponentBtn.addEventListener("click", () => {
+    opponents.push("");
+    renderOpponents();
+    renderGames();
+  });
+  addGameBtn.addEventListener("click", () => {
+    games.push({ id: gameIdCounter++, opponentIdx: 0, seconds: 0, running: false, startedAt: null, intervalId: null });
+    renderGames();
+  });
+
+  renderOpponents();
+  renderGames();
+
+  const saveBtn = el(`<button class="start-btn">Save Sparring Session</button>`);
+  saveBtn.addEventListener("click", () => {
+    const cleanOpponents = opponents.map((n) => n.trim()).filter(Boolean);
+    if (cleanOpponents.length === 0) {
+      toast("Enter at least one opponent's name");
+      return;
+    }
+    const targetMinutes = Math.max(1, parseInt(container.querySelector("#sparring-target").value, 10) || 60);
+    games.forEach((g) => {
+      if (g.running) {
+        g.running = false;
+        clearInterval(g.intervalId);
+      }
+    });
+    const sparringSession = {
+      id: `sparring-${Date.now()}`,
+      name: cleanOpponents.length === 1 ? `vs ${cleanOpponents[0]}` : `vs ${cleanOpponents.join(", ")}`,
+      targetMinutes,
+      opponents: cleanOpponents,
+      games: games.map((g) => ({
+        id: `game-${g.id}-${Date.now()}`,
+        opponentName: opponentLabel(g.opponentIdx),
+        durationSeconds: g.seconds,
+        myScore: Math.max(0, parseInt(g.myScore, 10) || 0),
+        oppScore: Math.max(0, parseInt(g.oppScore, 10) || 0),
+      })),
+      dateISO: todayISO(),
+      timeLabel: new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }),
+      createdAt: Date.now(),
+    };
+    updateState((s) => s.progress.sparringSessions.push(sparringSession));
+    toast("Sparring session saved");
+    navigate(`/training/sparring/${sparringSession.id}`);
+  });
+  container.appendChild(saveBtn);
 }
 
 function renderSessionPage(sessionId) {
@@ -1424,6 +1717,245 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(paintSessionBanner, 1000);
 });
 
+// ---------- Sparring ----------
+
+function gameResult(g) {
+  if (g.myScore > g.oppScore) return "win";
+  if (g.myScore < g.oppScore) return "loss";
+  return "tie";
+}
+
+function renderSparringSessionPage(sessionId) {
+  const wrap = el(`<div class="view view--sparring"></div>`);
+  const session = STATE.progress.sparringSessions.find((s) => s.id === sessionId);
+  if (!session) {
+    wrap.appendChild(el(`<div class="empty-state">Sparring session not found.</div>`));
+    return wrap;
+  }
+
+  const back = el(`<button class="back-button">← Training Sessions</button>`);
+  back.addEventListener("click", () => navigate("/training/category/sessions"));
+  wrap.appendChild(back);
+
+  const cat = getCategory("sessions");
+  const dateLabel = new Date(session.dateISO + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  wrap.appendChild(el(`
+    <div class="category-banner" style="background-image:linear-gradient(to top, rgba(6,8,12,0.92), rgba(6,8,12,0.1) 65%), url('${cat.photo}')">
+      <div class="category-banner__name">🥊 ${session.name}</div>
+      <div class="category-banner__tagline">${dateLabel} · ${session.games.length} game${session.games.length === 1 ? "" : "s"}</div>
+    </div>
+  `));
+
+  const wins = session.games.filter((g) => gameResult(g) === "win").length;
+  const losses = session.games.filter((g) => gameResult(g) === "loss").length;
+  const grid = el(`<div class="summary-grid"></div>`);
+  grid.appendChild(el(`<div class="summary-stat"><div class="summary-stat__value">${wins}</div><div class="summary-stat__label">Wins</div></div>`));
+  grid.appendChild(el(`<div class="summary-stat"><div class="summary-stat__value">${losses}</div><div class="summary-stat__label">Losses</div></div>`));
+  wrap.appendChild(grid);
+
+  const section = el(`<div class="section"><div class="section__title">Games</div></div>`);
+  const list = el(`<div class="exercise-list"></div>`);
+  session.games.forEach((g, idx) => {
+    const result = gameResult(g);
+    const row = el(`
+      <div class="exercise-row">
+        <div class="exercise-row__main">
+          <div class="exercise-row__name">Game ${idx + 1} vs ${g.opponentName} <span class="badge-result badge-result--${result}">${result === "win" ? "W" : result === "loss" ? "L" : "T"}</span></div>
+          <div class="exercise-row__meta">${g.myScore} – ${g.oppScore} · ${formatMMSS(g.durationSeconds)}</div>
+        </div>
+      </div>
+    `);
+    list.appendChild(row);
+  });
+  section.appendChild(list);
+  wrap.appendChild(section);
+
+  const deleteBtn = el(`<button class="reset-btn">Delete sparring session</button>`);
+  deleteBtn.addEventListener("click", async () => {
+    const ok = await showConfirm(`Delete "${session.name}"? This can't be undone.`);
+    if (ok) {
+      updateState((s) => (s.progress.sparringSessions = s.progress.sparringSessions.filter((sess) => sess.id !== sessionId)));
+      toast("Sparring session deleted");
+      navigate("/training/category/sessions");
+    }
+  });
+  wrap.appendChild(deleteBtn);
+
+  return wrap;
+}
+
+// ---------- Head to Head ----------
+
+function headToHeadStats() {
+  const byOpponent = {};
+  STATE.progress.sparringSessions.forEach((session) => {
+    session.games.forEach((g) => {
+      if (!byOpponent[g.opponentName]) byOpponent[g.opponentName] = [];
+      byOpponent[g.opponentName].push({ ...g, dateISO: session.dateISO, createdAt: session.createdAt });
+    });
+  });
+  return Object.keys(byOpponent)
+    .map((name) => {
+      const games = byOpponent[name].sort((a, b) => a.createdAt - b.createdAt);
+      const wins = games.filter((g) => gameResult(g) === "win").length;
+      const losses = games.filter((g) => gameResult(g) === "loss").length;
+      const ties = games.filter((g) => gameResult(g) === "tie").length;
+      const total = wins + losses;
+      const winPct = total === 0 ? 50 : Math.round((wins / total) * 100);
+      return { name, games, wins, losses, ties, winPct };
+    })
+    .sort((a, b) => b.games.length - a.games.length);
+}
+
+function renderHeadToHeadPage() {
+  const wrap = el(`<div class="view view--head-to-head"></div>`);
+  const back = el(`<button class="back-button">← Overview</button>`);
+  back.addEventListener("click", () => navigate("/overview"));
+  wrap.appendChild(back);
+
+  wrap.appendChild(el(`
+    <div class="page-header">
+      <div class="page-header__title">Head to Head</div>
+      <div class="page-header__subtitle">Your record against every sparring partner</div>
+    </div>
+  `));
+
+  const players = headToHeadStats();
+  if (players.length === 0) {
+    wrap.appendChild(el(`<div class="empty-state">No sparring sessions logged yet. Log a sparring session to start building your head-to-head record.</div>`));
+    return wrap;
+  }
+
+  const list = el(`<div class="hth-list"></div>`);
+  players.forEach((p) => {
+    const row = el(`
+      <button class="hth-row">
+        <div class="hth-row__name">${p.name}</div>
+        <div class="hth-row__record">
+          <span class="hth-row__wins">${p.wins}</span>
+          <div class="hth-row__bar"><div class="hth-row__bar-fill" style="width:${p.winPct}%"></div><span class="hth-row__pct">${p.winPct}%</span></div>
+          <span class="hth-row__losses">${p.losses}</span>
+        </div>
+      </button>
+    `);
+    row.addEventListener("click", () => navigate(`/head-to-head/${encodeURIComponent(p.name)}`));
+    list.appendChild(row);
+  });
+  wrap.appendChild(list);
+
+  return wrap;
+}
+
+function trendLabel(values, higherIsMore) {
+  if (values.length < 2) return null;
+  const mid = Math.ceil(values.length / 2);
+  const firstHalf = values.slice(0, mid);
+  const secondHalf = values.slice(mid);
+  const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+  const firstAvg = avg(firstHalf);
+  const secondAvg = avg(secondHalf.length ? secondHalf : firstHalf);
+  const diff = secondAvg - firstAvg;
+  if (Math.abs(diff) < 0.001) return "steady";
+  return diff > 0 === higherIsMore ? "up" : "down";
+}
+
+function sparkline(values, color) {
+  if (values.length < 2) return "";
+  const w = 280;
+  const h = 60;
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const range = max - min || 1;
+  const step = w / (values.length - 1);
+  const points = values.map((v, i) => `${i * step},${h - ((v - min) / range) * (h - 10) - 5}`).join(" ");
+  return `<svg viewBox="0 0 ${w} ${h}" class="sparkline"><polyline points="${points}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" /></svg>`;
+}
+
+function renderHeadToHeadDetailPage(rawName) {
+  const name = decodeURIComponent(rawName);
+  const wrap = el(`<div class="view view--head-to-head-detail"></div>`);
+  const back = el(`<button class="back-button">← Head to Head</button>`);
+  back.addEventListener("click", () => navigate("/head-to-head"));
+  wrap.appendChild(back);
+
+  const player = headToHeadStats().find((p) => p.name === name);
+  if (!player) {
+    wrap.appendChild(el(`<div class="empty-state">No games found against ${name}.</div>`));
+    return wrap;
+  }
+
+  wrap.appendChild(el(`
+    <div class="page-header">
+      <div class="page-header__title">${player.name}</div>
+      <div class="page-header__subtitle">${player.games.length} game${player.games.length === 1 ? "" : "s"} played</div>
+    </div>
+  `));
+
+  const grid = el(`<div class="summary-grid"></div>`);
+  grid.appendChild(el(`<div class="summary-stat"><div class="summary-stat__value">${player.wins}</div><div class="summary-stat__label">Wins</div></div>`));
+  grid.appendChild(el(`<div class="summary-stat"><div class="summary-stat__value">${player.losses}</div><div class="summary-stat__label">Losses</div></div>`));
+  wrap.appendChild(grid);
+
+  const durations = player.games.map((g) => g.durationSeconds);
+  const margins = player.games.map((g) => Math.abs(g.myScore - g.oppScore));
+  const durationTrend = trendLabel(durations, true);
+  const marginTrend = trendLabel(margins, false);
+
+  const trendSection = el(`<div class="section"><div class="section__title">Trends</div></div>`);
+  const trendCopy = {
+    up: { duration: "Games are getting longer", margin: "Scores are getting closer" },
+    down: { duration: "Games are getting shorter", margin: "Scores are getting further apart" },
+    steady: { duration: "Game length has stayed steady", margin: "Score margins have stayed steady" },
+  };
+  if (durationTrend) {
+    const block = el(`
+      <div class="info-block">
+        <div class="info-block__title">Game duration</div>
+        ${sparkline(durations, "var(--accent)")}
+        <div class="info-block__text">${trendCopy[durationTrend].duration}</div>
+      </div>
+    `);
+    trendSection.appendChild(block);
+  }
+  if (marginTrend) {
+    const block = el(`
+      <div class="info-block">
+        <div class="info-block__title">Score margin</div>
+        ${sparkline(margins, "var(--accent-2)")}
+        <div class="info-block__text">${trendCopy[marginTrend].margin}</div>
+      </div>
+    `);
+    trendSection.appendChild(block);
+  }
+  if (!durationTrend && !marginTrend) {
+    trendSection.appendChild(el(`<div class="empty-state">Play a few more games against ${player.name} to see trends.</div>`));
+  }
+  wrap.appendChild(trendSection);
+
+  const section = el(`<div class="section"><div class="section__title">Game history</div></div>`);
+  const list = el(`<div class="exercise-list"></div>`);
+  player.games
+    .slice()
+    .reverse()
+    .forEach((g) => {
+      const result = gameResult(g);
+      const dateLabel = new Date(g.dateISO + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      const row = el(`
+        <div class="exercise-row">
+          <div class="exercise-row__main">
+            <div class="exercise-row__name">${dateLabel} <span class="badge-result badge-result--${result}">${result === "win" ? "W" : result === "loss" ? "L" : "T"}</span></div>
+            <div class="exercise-row__meta">${g.myScore} – ${g.oppScore} · ${formatMMSS(g.durationSeconds)}</div>
+          </div>
+        </div>
+      `);
+      list.appendChild(row);
+    });
+  section.appendChild(list);
+  wrap.appendChild(section);
+
+  return wrap;
+}
+
 // ---------- Exercise detail ----------
 
 function renderExercisePage(exerciseId) {
@@ -1435,6 +1967,7 @@ function renderExercisePage(exerciseId) {
   }
   const cat = getCategory(ex.categoryId);
   const done = STATE.progress.completedExerciseIds.includes(ex.id);
+  const content = getEffectiveContent(ex);
 
   const back = el(`<button class="back-button">← ${cat.name}</button>`);
   back.addEventListener("click", () => navigate(`/training/category/${cat.id}`));
@@ -1443,7 +1976,7 @@ function renderExercisePage(exerciseId) {
   // Video section
   const videoSection = el(`
     <div class="video-card">
-      <video id="exercise-video" src="${PLACEHOLDER_VIDEO}" playsinline muted controls poster=""></video>
+      <video id="exercise-video" src="${content.videoUrl || PLACEHOLDER_VIDEO}" playsinline muted controls poster=""></video>
       <div class="video-controls">
         <button class="video-btn" id="btn-slowmo">🐢 Slow-mo</button>
         <button class="video-btn" id="btn-loop">🔁 Loop</button>
@@ -1453,7 +1986,7 @@ function renderExercisePage(exerciseId) {
           <button class="video-btn video-btn--pill" data-angle="Slow-Mo Replay">Slow-Mo Replay</button>
         </div>
       </div>
-      <div class="video-note">Demo footage — placeholder until real instructional video is uploaded.</div>
+      <div class="video-note">${content.videoUrl ? "Custom video link." : "Demo footage — placeholder until real instructional video is uploaded."}</div>
     </div>
   `);
   wrap.appendChild(videoSection);
@@ -1467,34 +2000,38 @@ function renderExercisePage(exerciseId) {
     </div>
   `));
 
+  const editDetailsBtn = el(`<button class="add-drill-btn">✎ Edit Details (description, video, coaching)</button>`);
+  editDetailsBtn.addEventListener("click", () => openDetailsForm(ex));
+  wrap.appendChild(editDetailsBtn);
+
   wrap.appendChild(el(`
     <div class="info-block">
       <div class="info-block__title">Training Goal</div>
-      <div class="info-block__text">${ex.goal}</div>
+      <div class="info-block__text">${content.goal}</div>
     </div>
   `));
 
-  if (ex.description) {
+  if (content.description) {
     wrap.appendChild(el(`
       <div class="info-block">
         <div class="info-block__title">Description</div>
-        <div class="info-block__text">${ex.description}</div>
+        <div class="info-block__text">${content.description}</div>
       </div>
     `));
   }
 
-  if (ex.coachingPoints.length > 0) {
+  if (content.coachingPoints.length > 0) {
     const pointsBlock = el(`<div class="info-block"><div class="info-block__title">Key Coaching Points</div></div>`);
     const pointsList = el(`<div class="point-list point-list--good"></div>`);
-    ex.coachingPoints.forEach((p) => pointsList.appendChild(el(`<div class="point-item">✓ ${p}</div>`)));
+    content.coachingPoints.forEach((p) => pointsList.appendChild(el(`<div class="point-item">✓ ${p}</div>`)));
     pointsBlock.appendChild(pointsList);
     wrap.appendChild(pointsBlock);
   }
 
-  if (ex.commonMistakes.length > 0) {
+  if (content.commonMistakes.length > 0) {
     const mistakesBlock = el(`<div class="info-block"><div class="info-block__title">Common Mistakes</div></div>`);
     const mistakesList = el(`<div class="point-list point-list--bad"></div>`);
-    ex.commonMistakes.forEach((m) => mistakesList.appendChild(el(`<div class="point-item">❌ ${m}</div>`)));
+    content.commonMistakes.forEach((m) => mistakesList.appendChild(el(`<div class="point-item">❌ ${m}</div>`)));
     mistakesBlock.appendChild(mistakesList);
     wrap.appendChild(mistakesBlock);
   }
@@ -1508,7 +2045,7 @@ function renderExercisePage(exerciseId) {
         ${
           isTimeMode
             ? `<div class="workout-stat"><div class="workout-stat__value">${ex.workout.durationSeconds}s</div><div class="workout-stat__label">per set</div></div>`
-            : `<div class="workout-stat"><div class="workout-stat__value">${ex.workout.shuttles}</div><div class="workout-stat__label">shuttles</div></div>`
+            : `<div class="workout-stat"><div class="workout-stat__value">${ex.workout.shuttles}</div><div class="workout-stat__label">${workoutUnitLabel(ex.workout.mode)}</div></div>`
         }
         <div class="workout-stat"><div class="workout-stat__value">${ex.workout.restSeconds}s</div><div class="workout-stat__label">rest</div></div>
       </div>
@@ -1588,6 +2125,48 @@ function difficultyLabel(n) {
   return ["", "Beginner", "Easy", "Intermediate", "Advanced", "Elite"][n] || "";
 }
 
+// ---------- Timer audio cues ----------
+// Synthesized with the Web Audio API so no sound assets need bundling.
+
+let audioCtx = null;
+
+function getAudioCtx() {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return null;
+  if (!audioCtx) audioCtx = new Ctx();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+function playTone(freq, durationMs, type) {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type || "square";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + durationMs / 1000);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + durationMs / 1000);
+  } catch (e) {
+    // Audio unavailable in this environment — fail silently.
+  }
+}
+
+function playCountdownBeep() {
+  playTone(1000, 120, "square");
+}
+
+function playSwitchBuzzer() {
+  // Boxing-bell-style buzzer: two short low tones back to back.
+  playTone(220, 350, "sawtooth");
+  setTimeout(() => playTone(220, 350, "sawtooth"), 380);
+}
+
 // ---------- Workout Timer Overlay ----------
 
 let timerHandle = null;
@@ -1595,8 +2174,9 @@ let timerHandle = null;
 function openTimer(ex) {
   const overlay = document.getElementById("timer-overlay");
   overlay.classList.add("is-open");
+  getAudioCtx(); // unlock audio within this user-gesture click
 
-  const mode = ex.workout.mode === "time" ? "time" : "shuttles";
+  const mode = ex.workout.mode || "shuttles";
   const workDuration = mode === "time" ? ex.workout.durationSeconds : Math.max(20, Math.min(90, ex.workout.shuttles * 3));
   const timerCtx = {
     ex,
@@ -1623,12 +2203,14 @@ function openTimer(ex) {
 function closeTimer() {
   clearInterval(timerHandle);
   timerHandle = null;
-  document.getElementById("timer-overlay").classList.remove("is-open");
+  const overlay = document.getElementById("timer-overlay");
+  overlay.classList.remove("is-open", "phase-work", "phase-rest");
 }
 
 function tickTimer(ctx) {
   if (ctx.paused || ctx.phase === "done") return;
   ctx.remaining -= 1;
+  if (ctx.remaining === 10) playCountdownBeep();
   if (ctx.remaining <= 0) {
     if (ctx.phase === "work") {
       if (ctx.mode === "time") {
@@ -1639,6 +2221,7 @@ function tickTimer(ctx) {
       if (ctx.set >= ctx.totalSets) {
         ctx.phase = "done";
         clearInterval(timerHandle);
+        playSwitchBuzzer();
         finishWorkout(ctx);
         return;
       }
@@ -1650,6 +2233,7 @@ function tickTimer(ctx) {
       ctx.remaining = ctx.workDuration;
       ctx.shuttles = 0;
     }
+    playSwitchBuzzer();
   }
   renderTimer(ctx);
 }
@@ -1658,6 +2242,10 @@ function renderTimer(ctx) {
   const body = document.getElementById("timer-body");
   if (ctx.phase === "done") return;
 
+  const overlay = document.getElementById("timer-overlay");
+  overlay.classList.toggle("phase-work", ctx.phase === "work");
+  overlay.classList.toggle("phase-rest", ctx.phase === "rest");
+
   body.replaceChildren(el(`
     <div class="timer-content">
       <div class="timer-set">Set ${ctx.set} of ${ctx.totalSets}</div>
@@ -1665,10 +2253,10 @@ function renderTimer(ctx) {
       <div class="timer-clock">${formatMMSS(Math.max(0, ctx.remaining))}</div>
       ${
         ctx.phase === "work"
-          ? ctx.mode === "shuttles"
+          ? ctx.mode !== "time"
             ? `<div class="timer-reps">
                  <button class="rep-btn" id="shuttle-minus">−</button>
-                 <div class="timer-reps__value">${ctx.shuttles} <span>/ ${ctx.targetShuttles} shuttles</span></div>
+                 <div class="timer-reps__value">${ctx.shuttles} <span>/ ${ctx.targetShuttles} ${workoutUnitLabel(ctx.mode)}</span></div>
                  <button class="rep-btn" id="shuttle-plus">+</button>
                </div>`
             : `<div class="timer-rest-note">Keep training for the full set</div>`
@@ -1681,7 +2269,7 @@ function renderTimer(ctx) {
     </div>
   `));
 
-  if (ctx.phase === "work" && ctx.mode === "shuttles") {
+  if (ctx.phase === "work" && ctx.mode !== "time") {
     body.querySelector("#shuttle-minus").addEventListener("click", () => {
       ctx.shuttles = Math.max(0, ctx.shuttles - 1);
       renderTimer(ctx);
@@ -1703,6 +2291,7 @@ function renderTimer(ctx) {
 
 function finishWorkout(ctx) {
   const body = document.getElementById("timer-body");
+  document.getElementById("timer-overlay").classList.remove("phase-work", "phase-rest");
   let localRating = STATE.progress.difficultyRatings[ctx.ex.id] || 0;
 
   const cat = getCategory(ctx.ex.categoryId);
@@ -1733,7 +2322,7 @@ function finishWorkout(ctx) {
                </div>`
             : `<div class="summary-stat">
                  <div class="summary-stat__value">${ctx.totalShuttlesHit}</div>
-                 <div class="summary-stat__label">Shuttles</div>
+                 <div class="summary-stat__label">${workoutUnitLabel(ctx.mode)[0].toUpperCase()}${workoutUnitLabel(ctx.mode).slice(1)}</div>
                </div>`
         }
         <div class="summary-stat">
@@ -1786,7 +2375,7 @@ function finishWorkout(ctx) {
         durationSeconds,
         setsCompleted: ctx.totalSets,
         mode: ctx.mode,
-        totalShuttles: ctx.mode === "shuttles" ? ctx.totalShuttlesHit : null,
+        totalShuttles: ctx.mode !== "time" ? ctx.totalShuttlesHit : null,
         totalWorkSeconds: ctx.mode === "time" ? ctx.totalWorkSeconds : null,
         expGained,
         calories,
@@ -1814,30 +2403,36 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById("drill-form-close").addEventListener("click", closeDrillForm);
   document.getElementById("schedule-form-close").addEventListener("click", closeScheduleForm);
+  document.getElementById("details-form-close").addEventListener("click", closeDetailsForm);
+  document.getElementById("merge-form-close").addEventListener("click", closeMergeForm);
 });
 
 // ---------- Custom Drills ----------
 
-function openDrillForm(onCreated, existingDrill) {
+const CUSTOM_ITEM_NOUN = { drills: "Drill", technique: "Technique", footwork: "Footwork", strength: "Exercise" };
+
+function openDrillForm(onCreated, existingDrill, categoryId) {
   document.getElementById("drill-form-overlay").classList.add("is-open");
-  renderDrillForm(onCreated, existingDrill);
+  renderDrillForm(onCreated, existingDrill, categoryId);
 }
 
 function closeDrillForm() {
   document.getElementById("drill-form-overlay").classList.remove("is-open");
 }
 
-function renderDrillForm(onCreated, existingDrill) {
+function renderDrillForm(onCreated, existingDrill, categoryId) {
   const body = document.getElementById("drill-form-body");
   const isEdit = !!existingDrill;
+  const targetCategoryId = isEdit ? existingDrill.categoryId : categoryId || "drills";
+  const noun = CUSTOM_ITEM_NOUN[targetCategoryId] || "Drill";
   const w = existingDrill ? existingDrill.workout : null;
   let mode = w ? w.mode || "shuttles" : "shuttles";
 
   const view = el(`
     <div class="drill-form">
-      <div class="drill-form__title">${isEdit ? "Edit Drill" : "New Custom Drill"}</div>
+      <div class="drill-form__title">${isEdit ? `Edit ${noun}` : `New Custom ${noun}`}</div>
       <div class="field">
-        <label class="field__label">Drill name</label>
+        <label class="field__label">${noun} name</label>
         <input class="field__input" id="drill-name" type="text" placeholder="e.g. Multi-shuttle feeding" value="${isEdit ? existingDrill.name : ""}" />
       </div>
       <div class="field">
@@ -1848,12 +2443,17 @@ function renderDrillForm(onCreated, existingDrill) {
         <label class="field__label">Set type</label>
         <div class="chip-row">
           <button class="chip ${mode === "shuttles" ? "is-active" : ""}" id="drill-mode-shuttles" type="button">Shuttles</button>
+          <button class="chip ${mode === "reps" ? "is-active" : ""}" id="drill-mode-reps" type="button">Reps</button>
           <button class="chip ${mode === "time" ? "is-active" : ""}" id="drill-mode-time" type="button">Time</button>
         </div>
       </div>
-      <div class="field" id="drill-shuttles-field" style="${mode === "time" ? "display:none" : ""}">
+      <div class="field" id="drill-shuttles-field" style="${mode === "shuttles" ? "" : "display:none"}">
         <label class="field__label">Shuttles per set</label>
         <input class="field__input" id="drill-shuttles" type="number" min="1" value="${isEdit && mode === "shuttles" ? w.shuttles : 15}" />
+      </div>
+      <div class="field" id="drill-reps-field" style="${mode === "reps" ? "" : "display:none"}">
+        <label class="field__label">Reps per set</label>
+        <input class="field__input" id="drill-reps" type="number" min="1" value="${isEdit && mode === "reps" ? w.shuttles : 12}" />
       </div>
       <div class="field" id="drill-duration-field" style="${mode === "time" ? "" : "display:none"}">
         <label class="field__label">Seconds per set</label>
@@ -1863,43 +2463,49 @@ function renderDrillForm(onCreated, existingDrill) {
         <label class="field__label">Rest between sets (seconds)</label>
         <input class="field__input" id="drill-rest" type="number" min="0" value="${isEdit ? w.restSeconds : 60}" />
       </div>
-      <button class="start-btn" id="drill-save">${isEdit ? "Save Changes" : "Add Drill"}</button>
+      <button class="start-btn" id="drill-save">${isEdit ? "Save Changes" : `Add ${noun}`}</button>
     </div>
   `);
   body.replaceChildren(view);
 
-  const modeShuttlesBtn = view.querySelector("#drill-mode-shuttles");
-  const modeTimeBtn = view.querySelector("#drill-mode-time");
-  const shuttlesField = view.querySelector("#drill-shuttles-field");
-  const durationField = view.querySelector("#drill-duration-field");
+  const modeBtns = {
+    shuttles: view.querySelector("#drill-mode-shuttles"),
+    reps: view.querySelector("#drill-mode-reps"),
+    time: view.querySelector("#drill-mode-time"),
+  };
+  const modeFields = {
+    shuttles: view.querySelector("#drill-shuttles-field"),
+    reps: view.querySelector("#drill-reps-field"),
+    time: view.querySelector("#drill-duration-field"),
+  };
 
-  modeShuttlesBtn.addEventListener("click", () => {
-    mode = "shuttles";
-    modeShuttlesBtn.classList.add("is-active");
-    modeTimeBtn.classList.remove("is-active");
-    shuttlesField.style.display = "";
-    durationField.style.display = "none";
-  });
-  modeTimeBtn.addEventListener("click", () => {
-    mode = "time";
-    modeTimeBtn.classList.add("is-active");
-    modeShuttlesBtn.classList.remove("is-active");
-    shuttlesField.style.display = "none";
-    durationField.style.display = "";
-  });
+  function selectMode(next) {
+    mode = next;
+    Object.keys(modeBtns).forEach((key) => {
+      modeBtns[key].classList.toggle("is-active", key === next);
+      modeFields[key].style.display = key === next ? "" : "none";
+    });
+  }
+  modeBtns.shuttles.addEventListener("click", () => selectMode("shuttles"));
+  modeBtns.reps.addEventListener("click", () => selectMode("reps"));
+  modeBtns.time.addEventListener("click", () => selectMode("time"));
 
   view.querySelector("#drill-save").addEventListener("click", () => {
     const name = view.querySelector("#drill-name").value.trim();
     if (!name) {
-      toast("Give your drill a name");
+      toast(`Give your ${noun.toLowerCase()} a name`);
       return;
     }
     const sets = Math.max(1, parseInt(view.querySelector("#drill-sets").value, 10) || 1);
     const restSeconds = Math.max(0, parseInt(view.querySelector("#drill-rest").value, 10) || 0);
-    const workout =
-      mode === "shuttles"
-        ? { sets, mode: "shuttles", shuttles: Math.max(1, parseInt(view.querySelector("#drill-shuttles").value, 10) || 1), restSeconds }
-        : { sets, mode: "time", durationSeconds: Math.max(5, parseInt(view.querySelector("#drill-duration").value, 10) || 5), restSeconds };
+    let workout;
+    if (mode === "time") {
+      workout = { sets, mode: "time", durationSeconds: Math.max(5, parseInt(view.querySelector("#drill-duration").value, 10) || 5), restSeconds };
+    } else if (mode === "reps") {
+      workout = { sets, mode: "reps", shuttles: Math.max(1, parseInt(view.querySelector("#drill-reps").value, 10) || 1), restSeconds };
+    } else {
+      workout = { sets, mode: "shuttles", shuttles: Math.max(1, parseInt(view.querySelector("#drill-shuttles").value, 10) || 1), restSeconds };
+    }
 
     if (isEdit) {
       let updated = null;
@@ -1911,7 +2517,7 @@ function renderDrillForm(onCreated, existingDrill) {
         }
       });
       closeDrillForm();
-      toast("Drill updated");
+      toast(`${noun} updated`);
       if (onCreated) onCreated(updated);
       else render();
       return;
@@ -1919,19 +2525,20 @@ function renderDrillForm(onCreated, existingDrill) {
 
     const drill = {
       id: `custom-${slugify(name)}-${Date.now()}`,
-      categoryId: "drills",
+      categoryId: targetCategoryId,
       name,
       isCustom: true,
       difficulty: 0,
-      goal: "Custom drill — add your own notes and technique cues as you train.",
+      goal: `Custom ${noun.toLowerCase()} — add your own notes and technique cues as you train.`,
       description: "",
+      videoUrl: null,
       coachingPoints: [],
       commonMistakes: [],
       workout,
     };
     updateState((s) => s.progress.customDrills.push(drill));
     closeDrillForm();
-    toast("Custom drill added");
+    toast(`Custom ${noun.toLowerCase()} added`);
     if (onCreated) onCreated(drill);
     else render();
   });
@@ -2001,6 +2608,201 @@ function renderScheduleForm(sessionId) {
     updateState((s) => s.progress.scheduledSessions.push(scheduled));
     closeScheduleForm();
     toast("Added to your calendar");
+    render();
+  });
+}
+
+// ---------- Merge duplicates ----------
+
+function openMergeForm(categoryId) {
+  document.getElementById("merge-form-overlay").classList.add("is-open");
+  renderMergeForm(categoryId);
+}
+
+function closeMergeForm() {
+  document.getElementById("merge-form-overlay").classList.remove("is-open");
+}
+
+function renderMergeForm(categoryId) {
+  const body = document.getElementById("merge-form-body");
+  const cat = getCategory(categoryId);
+  const customItems = getExercisesForCategory(categoryId).filter((ex) => ex.isCustom);
+
+  if (customItems.length < 2) {
+    body.replaceChildren(el(`
+      <div class="drill-form">
+        <div class="drill-form__title">Merge Duplicates</div>
+        <div class="empty-state">You need at least 2 custom entries in ${cat.name} to merge — built-in techniques and exercises can't be merged or deleted.</div>
+      </div>
+    `));
+    return;
+  }
+
+  let keepId = customItems[0].id;
+
+  const view = el(`
+    <div class="drill-form">
+      <div class="drill-form__title">Merge Duplicates</div>
+      <div class="field">
+        <label class="field__label">First entry</label>
+        <select class="field__input" id="merge-first"></select>
+      </div>
+      <div class="field">
+        <label class="field__label">Second entry</label>
+        <select class="field__input" id="merge-second"></select>
+      </div>
+      <div class="field">
+        <label class="field__label">Keep which one's details?</label>
+        <div class="chip-row" id="merge-keep-row"></div>
+      </div>
+      <button class="start-btn" id="merge-save">Merge</button>
+    </div>
+  `);
+  body.replaceChildren(view);
+
+  const firstSelect = view.querySelector("#merge-first");
+  const secondSelect = view.querySelector("#merge-second");
+  customItems.forEach((ex) => {
+    firstSelect.appendChild(el(`<option value="${ex.id}">${ex.name}</option>`));
+    secondSelect.appendChild(el(`<option value="${ex.id}">${ex.name}</option>`));
+  });
+  firstSelect.value = customItems[0].id;
+  secondSelect.value = customItems[1].id;
+
+  const keepRow = view.querySelector("#merge-keep-row");
+  function paintKeepChips() {
+    keepRow.replaceChildren();
+    const a = getExercise(firstSelect.value);
+    const b = getExercise(secondSelect.value);
+    [a, b].forEach((ex) => {
+      if (!ex) return;
+      const chip = el(`<button class="chip ${keepId === ex.id ? "is-active" : ""}" type="button">${ex.name}</button>`);
+      chip.addEventListener("click", () => {
+        keepId = ex.id;
+        paintKeepChips();
+      });
+      keepRow.appendChild(chip);
+    });
+  }
+  paintKeepChips();
+  firstSelect.addEventListener("change", () => {
+    keepId = firstSelect.value;
+    paintKeepChips();
+  });
+  secondSelect.addEventListener("change", () => {
+    keepId = firstSelect.value;
+    paintKeepChips();
+  });
+
+  view.querySelector("#merge-save").addEventListener("click", async () => {
+    const idA = firstSelect.value;
+    const idB = secondSelect.value;
+    if (idA === idB) {
+      toast("Pick two different entries to merge");
+      return;
+    }
+    const loserId = keepId === idA ? idB : idA;
+    const winnerId = keepId;
+    const winnerEx = getExercise(winnerId);
+    const loserEx = getExercise(loserId);
+    const ok = await showConfirm(`Merge and delete "${loserEx.name}"? Any sessions using it will switch to "${winnerEx.name}" instead. This can't be undone.`);
+    if (!ok) return;
+
+    updateState((s) => {
+      s.progress.trainingSessions.forEach((session) => {
+        const swapped = session.exerciseIds.map((id) => (id === loserId ? winnerId : id));
+        session.exerciseIds = swapped.filter((id, idx) => swapped.indexOf(id) === idx);
+      });
+      if (s.progress.completedExerciseIds.includes(loserId)) {
+        if (!s.progress.completedExerciseIds.includes(winnerId)) s.progress.completedExerciseIds.push(winnerId);
+        s.progress.completedExerciseIds = s.progress.completedExerciseIds.filter((id) => id !== loserId);
+      }
+      if (s.progress.notes[loserId] && !s.progress.notes[winnerId]) s.progress.notes[winnerId] = s.progress.notes[loserId];
+      delete s.progress.notes[loserId];
+      if (s.progress.difficultyRatings[loserId] && !s.progress.difficultyRatings[winnerId]) {
+        s.progress.difficultyRatings[winnerId] = s.progress.difficultyRatings[loserId];
+      }
+      delete s.progress.difficultyRatings[loserId];
+      if (s.progress.lastExerciseId === loserId) s.progress.lastExerciseId = winnerId;
+      s.progress.customDrills = s.progress.customDrills.filter((d) => d.id !== loserId);
+    });
+    closeMergeForm();
+    toast(`Merged into "${winnerEx.name}"`);
+    render();
+  });
+}
+
+// ---------- Content editing (description, video, etc.) ----------
+
+function getContentOverride(exerciseId) {
+  return STATE.progress.contentOverrides[exerciseId] || null;
+}
+
+function getEffectiveContent(ex) {
+  if (ex.isCustom) return ex;
+  const override = getContentOverride(ex.id);
+  return override ? { ...ex, ...override } : ex;
+}
+
+function openDetailsForm(ex) {
+  document.getElementById("details-form-overlay").classList.add("is-open");
+  renderDetailsForm(ex);
+}
+
+function closeDetailsForm() {
+  document.getElementById("details-form-overlay").classList.remove("is-open");
+}
+
+function renderDetailsForm(ex) {
+  const body = document.getElementById("details-form-body");
+  const content = getEffectiveContent(ex);
+
+  const view = el(`
+    <div class="drill-form">
+      <div class="drill-form__title">Edit Details</div>
+      <div class="field">
+        <label class="field__label">Training goal</label>
+        <textarea class="notes-input" id="details-goal">${content.goal || ""}</textarea>
+      </div>
+      <div class="field">
+        <label class="field__label">Description</label>
+        <textarea class="notes-input" id="details-description">${content.description || ""}</textarea>
+      </div>
+      <div class="field">
+        <label class="field__label">Video URL</label>
+        <input class="field__input" id="details-video" type="text" placeholder="Paste a video link" value="${content.videoUrl || ""}" />
+      </div>
+      <div class="field">
+        <label class="field__label">Coaching points (one per line)</label>
+        <textarea class="notes-input" id="details-coaching">${(content.coachingPoints || []).join("\n")}</textarea>
+      </div>
+      <div class="field">
+        <label class="field__label">Common mistakes (one per line)</label>
+        <textarea class="notes-input" id="details-mistakes">${(content.commonMistakes || []).join("\n")}</textarea>
+      </div>
+      <button class="start-btn" id="details-save">Save Details</button>
+    </div>
+  `);
+  body.replaceChildren(view);
+
+  view.querySelector("#details-save").addEventListener("click", () => {
+    const goal = view.querySelector("#details-goal").value.trim();
+    const description = view.querySelector("#details-description").value.trim();
+    const videoUrl = view.querySelector("#details-video").value.trim();
+    const coachingPoints = view.querySelector("#details-coaching").value.split("\n").map((s) => s.trim()).filter(Boolean);
+    const commonMistakes = view.querySelector("#details-mistakes").value.split("\n").map((s) => s.trim()).filter(Boolean);
+    const updates = { goal, description, videoUrl: videoUrl || null, coachingPoints, commonMistakes };
+
+    updateState((s) => {
+      if (ex.isCustom) {
+        const idx = s.progress.customDrills.findIndex((d) => d.id === ex.id);
+        if (idx >= 0) s.progress.customDrills[idx] = { ...s.progress.customDrills[idx], ...updates };
+      } else {
+        s.progress.contentOverrides[ex.id] = updates;
+      }
+    });
+    closeDetailsForm();
+    toast("Details saved");
     render();
   });
 }
