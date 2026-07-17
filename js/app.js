@@ -326,7 +326,6 @@ function applyTheme() {
 
 function renderOverview() {
   const p = STATE.progress;
-  const recommended = EXERCISES.filter((e) => !p.completedExerciseIds.includes(e.id)).slice(0, 4);
   const lastExercise = p.lastExerciseId ? getExercise(p.lastExerciseId) : null;
 
   const wrap = el(`<div class="view view--overview"></div>`);
@@ -408,12 +407,6 @@ function renderOverview() {
     }
   }
   wrap.appendChild(recentSection);
-
-  const recSection = el(`<div class="section"><div class="section__title">Recommended for you</div></div>`);
-  const recGrid = el(`<div class="exercise-card-grid"></div>`);
-  recommended.forEach((ex) => recGrid.appendChild(exerciseCard(ex)));
-  recSection.appendChild(recGrid);
-  wrap.appendChild(recSection);
 
   return wrap;
 }
@@ -776,24 +769,6 @@ function renderTraining() {
   return wrap;
 }
 
-function exerciseCard(ex) {
-  const cat = getCategory(ex.categoryId);
-  const done = STATE.progress.completedExerciseIds.includes(ex.id);
-  const card = el(`
-    <button class="exercise-card">
-      <div class="exercise-card__thumb" style="background-image:url('${cat.photo}')">
-        ${done ? '<span class="exercise-card__done">✓</span>' : ""}
-      </div>
-      <div class="exercise-card__body">
-        <div class="exercise-card__name">${ex.name}</div>
-        <div class="exercise-card__meta">${stars(ex.difficulty)} · ${workoutSummaryShort(ex)}</div>
-      </div>
-    </button>
-  `);
-  card.addEventListener("click", () => navigate(`/training/exercise/${ex.id}`));
-  return card;
-}
-
 function renderCategoryPage(categoryId) {
   const cat = getCategory(categoryId);
   const wrap = el(`<div class="view view--category"></div>`);
@@ -1054,12 +1029,23 @@ function renderSessionBuilder() {
         <div class="exercise-row exercise-row--draggable" draggable="true">
           <span class="drag-handle">☰</span>
           <div class="exercise-row__main">
-            <div class="exercise-row__name">${ex.name}</div>
-            <div class="exercise-row__meta">${getCategory(ex.categoryId).name}</div>
+            <div class="exercise-row__name">${ex.name} ${ex.isCustom ? '<span class="edit-hint">✎ edit</span>' : ""}</div>
+            <div class="exercise-row__meta">${getCategory(ex.categoryId).name} · ${workoutSummaryShort(ex)}</div>
           </div>
           <button class="remove-btn" type="button">✕</button>
         </div>
       `);
+
+      const mainEl = row.querySelector(".exercise-row__main");
+      mainEl.addEventListener("click", () => {
+        if (ex.isCustom) {
+          openDrillForm(() => {
+            renderSelected();
+          }, ex);
+        } else {
+          toast("Built-in exercises can't be edited — create a custom drill to set your own numbers.");
+        }
+      });
 
       row.querySelector(".remove-btn").addEventListener("click", () => {
         const idx = selectedIds.indexOf(id);
@@ -1832,50 +1818,52 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ---------- Custom Drills ----------
 
-function openDrillForm(onCreated) {
+function openDrillForm(onCreated, existingDrill) {
   document.getElementById("drill-form-overlay").classList.add("is-open");
-  renderDrillForm(onCreated);
+  renderDrillForm(onCreated, existingDrill);
 }
 
 function closeDrillForm() {
   document.getElementById("drill-form-overlay").classList.remove("is-open");
 }
 
-function renderDrillForm(onCreated) {
+function renderDrillForm(onCreated, existingDrill) {
   const body = document.getElementById("drill-form-body");
-  let mode = "shuttles";
+  const isEdit = !!existingDrill;
+  const w = existingDrill ? existingDrill.workout : null;
+  let mode = w ? w.mode || "shuttles" : "shuttles";
 
   const view = el(`
     <div class="drill-form">
-      <div class="drill-form__title">New Custom Drill</div>
+      <div class="drill-form__title">${isEdit ? "Edit Drill" : "New Custom Drill"}</div>
       <div class="field">
         <label class="field__label">Drill name</label>
-        <input class="field__input" id="drill-name" type="text" placeholder="e.g. Multi-shuttle feeding" />
+        <input class="field__input" id="drill-name" type="text" placeholder="e.g. Multi-shuttle feeding" value="${isEdit ? existingDrill.name : ""}" />
       </div>
       <div class="field">
         <label class="field__label">Sets</label>
-        <input class="field__input" id="drill-sets" type="number" min="1" value="5" />
+        <input class="field__input" id="drill-sets" type="number" min="1" value="${isEdit ? w.sets : 5}" />
       </div>
       <div class="field">
         <label class="field__label">Set type</label>
         <div class="chip-row">
-          <button class="chip is-active" id="drill-mode-shuttles" type="button">Shuttles</button>
-          <button class="chip" id="drill-mode-time" type="button">Time</button>
+          <button class="chip ${mode === "shuttles" ? "is-active" : ""}" id="drill-mode-shuttles" type="button">Shuttles</button>
+          <button class="chip ${mode === "time" ? "is-active" : ""}" id="drill-mode-time" type="button">Time</button>
         </div>
       </div>
-      <div class="field" id="drill-shuttles-field">
+      <div class="field" id="drill-shuttles-field" style="${mode === "time" ? "display:none" : ""}">
         <label class="field__label">Shuttles per set</label>
-        <input class="field__input" id="drill-shuttles" type="number" min="1" value="15" />
+        <input class="field__input" id="drill-shuttles" type="number" min="1" value="${isEdit && mode === "shuttles" ? w.shuttles : 15}" />
       </div>
-      <div class="field" id="drill-duration-field" style="display:none">
+      <div class="field" id="drill-duration-field" style="${mode === "time" ? "" : "display:none"}">
         <label class="field__label">Seconds per set</label>
-        <input class="field__input" id="drill-duration" type="number" min="5" value="30" />
+        <input class="field__input" id="drill-duration" type="number" min="5" value="${isEdit && mode === "time" ? w.durationSeconds : 30}" />
       </div>
       <div class="field">
         <label class="field__label">Rest between sets (seconds)</label>
-        <input class="field__input" id="drill-rest" type="number" min="0" value="60" />
+        <input class="field__input" id="drill-rest" type="number" min="0" value="${isEdit ? w.restSeconds : 60}" />
       </div>
-      <button class="start-btn" id="drill-save">Add Drill</button>
+      <button class="start-btn" id="drill-save">${isEdit ? "Save Changes" : "Add Drill"}</button>
     </div>
   `);
   body.replaceChildren(view);
@@ -1912,6 +1900,22 @@ function renderDrillForm(onCreated) {
       mode === "shuttles"
         ? { sets, mode: "shuttles", shuttles: Math.max(1, parseInt(view.querySelector("#drill-shuttles").value, 10) || 1), restSeconds }
         : { sets, mode: "time", durationSeconds: Math.max(5, parseInt(view.querySelector("#drill-duration").value, 10) || 5), restSeconds };
+
+    if (isEdit) {
+      let updated = null;
+      updateState((s) => {
+        const idx = s.progress.customDrills.findIndex((d) => d.id === existingDrill.id);
+        if (idx >= 0) {
+          s.progress.customDrills[idx] = { ...s.progress.customDrills[idx], name, workout };
+          updated = s.progress.customDrills[idx];
+        }
+      });
+      closeDrillForm();
+      toast("Drill updated");
+      if (onCreated) onCreated(updated);
+      else render();
+      return;
+    }
 
     const drill = {
       id: `custom-${slugify(name)}-${Date.now()}`,
