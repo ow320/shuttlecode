@@ -55,6 +55,18 @@ button {
   cursor: pointer;
   border: none;
   background: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+.bottom-nav .nav-item:active,
+.timer-close:active,
+.rep-btn:active {
+  transform: none;
 }
 
 /* ===== Phone frame ===== */
@@ -134,10 +146,16 @@ button {
   transition: color 0.15s ease, transform 0.15s ease;
 }
 
-.nav-item__icon { font-size: 20px; filter: grayscale(1); opacity: 0.55; transition: all 0.15s ease; }
+.nav-item__icon {
+  display: flex;
+  color: var(--text-faint);
+  opacity: 0.7;
+  transition: all 0.15s ease;
+}
+.nav-item__icon svg { width: 24px; height: 24px; }
 
 .nav-item.is-active { color: var(--accent); }
-.nav-item.is-active .nav-item__icon { filter: none; opacity: 1; transform: translateY(-2px); }
+.nav-item.is-active .nav-item__icon { color: var(--accent); opacity: 1; transform: translateY(-2px); }
 
 /* ===== Generic layout ===== */
 .section { margin-top: 28px; }
@@ -215,6 +233,64 @@ button {
 .stat-card--accent { border-color: color-mix(in srgb, var(--accent-2) 40%, var(--border)); }
 .stat-card__value { font-size: 24px; font-weight: 800; }
 .stat-card__label { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+.next-session-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.next-session-card__label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); }
+.next-session-card__name { font-size: 16px; font-weight: 800; margin-top: 4px; }
+.next-session-card__when { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+
+.calendar-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 16px;
+}
+.calendar-card__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.calendar-card__title { font-size: 15px; font-weight: 800; }
+.calendar-nav {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--bg-card-2);
+  color: var(--text);
+  font-size: 16px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.calendar-nav:active { transform: scale(0.92); }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.calendar-grid__weekday { text-align: center; font-size: 11px; font-weight: 700; color: var(--text-faint); padding-bottom: 4px; }
+.calendar-day {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  color: var(--text);
+}
+.calendar-day--muted { color: var(--text-faint); opacity: 0.4; }
+.calendar-day--today { background: var(--bg-card-2); color: var(--accent); font-weight: 800; }
+.calendar-day--selected { background: var(--accent); color: var(--accent-ink); }
+.calendar-day__dot {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--accent-2);
+}
+.calendar-day--selected .calendar-day__dot { background: var(--accent-ink); }
+.calendar-day-detail { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.calendar-day-detail__title { font-size: 13px; font-weight: 700; color: var(--text-dim); margin-bottom: 10px; }
+.calendar-day-detail .exercise-list { display: flex; flex-direction: column; gap: 8px; }
 
 .skill-bar { margin-bottom: 14px; }
 .skill-bar__top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
@@ -530,6 +606,17 @@ button {
   padding: 28px 24px 40px;
   border-top: 1px solid var(--border);
   min-height: 60%;
+}
+
+.sheet-handle {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--border);
 }
 
 .timer-close {

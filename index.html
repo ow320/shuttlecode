@@ -16,21 +16,28 @@
 
     <nav class="bottom-nav">
       <button class="nav-item" data-nav="overview">
-        <span class="nav-item__icon">🏠</span>
+        <span class="nav-item__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9"/></svg>
+        </span>
         <span class="nav-item__label">Overview</span>
       </button>
       <button class="nav-item" data-nav="training">
-        <span class="nav-item__icon">🏸</span>
+        <span class="nav-item__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="9" r="5.5"/><path d="M10 4.3v9.4M5.3 9h9.4" stroke-width="1" opacity="0.55"/><path d="M13.4 12.4 16 15" stroke-width="3.2"/><path d="M16 15v6.2" stroke-width="2.4"/></svg>
+        </span>
         <span class="nav-item__label">Training</span>
       </button>
       <button class="nav-item" data-nav="settings">
-        <span class="nav-item__icon">⚙️</span>
+        <span class="nav-item__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.97 7.97 0 0 0 0-2l2.1-1.6-2-3.4-2.5 1a8 8 0 0 0-1.7-1L14.9 3h-4l-.4 2.9a8 8 0 0 0-1.7 1l-2.5-1-2 3.4L6.4 11a8 8 0 0 0 0 2l-2.1 1.6 2 3.4 2.5-1a8 8 0 0 0 1.7 1l.4 3h4l.4-2.9a8 8 0 0 0 1.7-1l2.5 1 2-3.4-2.1-1.6Z"/></svg>
+        </span>
         <span class="nav-item__label">Settings</span>
       </button>
     </nav>
 
     <div class="timer-overlay" id="timer-overlay">
       <div class="timer-overlay__panel">
+        <div class="sheet-handle"></div>
         <button class="timer-close" id="timer-close">✕</button>
         <div id="timer-body"></div>
       </div>
@@ -38,8 +45,17 @@
 
     <div class="timer-overlay" id="drill-form-overlay">
       <div class="timer-overlay__panel">
+        <div class="sheet-handle"></div>
         <button class="timer-close" id="drill-form-close">✕</button>
         <div id="drill-form-body"></div>
+      </div>
+    </div>
+
+    <div class="timer-overlay" id="schedule-form-overlay">
+      <div class="timer-overlay__panel">
+        <div class="sheet-handle"></div>
+        <button class="timer-close" id="schedule-form-close">✕</button>
+        <div id="schedule-form-body"></div>
       </div>
     </div>
 

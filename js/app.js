@@ -70,6 +70,64 @@ function daysBetween(isoA, isoB) {
   return Math.round((b - a) / 86400000);
 }
 
+function formatTimeLabel(hhmm) {
+  const [h, m] = hhmm.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
+function addDaysISO(dateISO, days) {
+  const d = new Date(dateISO + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+const REPEAT_OPTIONS = [
+  { value: "", label: "Does not repeat" },
+  { value: "1", label: "Daily" },
+  { value: "2", label: "Every 2 days" },
+  { value: "3", label: "Every 3 days" },
+  { value: "7", label: "Weekly" },
+  { value: "14", label: "Every 2 weeks" },
+  { value: "30", label: "Monthly" },
+];
+
+function repeatLabel(repeatDays) {
+  const opt = REPEAT_OPTIONS.find((o) => o.value === String(repeatDays || ""));
+  return opt ? opt.label : "Does not repeat";
+}
+
+// Whether a scheduled entry lands on the given date (expanding its repeat rule).
+function scheduleOccursOn(sched, dateISO) {
+  if (dateISO < sched.startDate) return false;
+  if (!sched.repeatDays) return dateISO === sched.startDate;
+  const diff = daysBetween(sched.startDate, dateISO);
+  return diff >= 0 && diff % sched.repeatDays === 0;
+}
+
+// Soonest occurrence of a single schedule on or after fromDateISO.
+function nextOccurrenceOf(sched, fromDateISO) {
+  if (sched.startDate >= fromDateISO) return sched.startDate;
+  if (!sched.repeatDays) return null;
+  const diff = daysBetween(sched.startDate, fromDateISO);
+  const stepsNeeded = Math.ceil(diff / sched.repeatDays);
+  return addDaysISO(sched.startDate, stepsNeeded * sched.repeatDays);
+}
+
+// The single soonest upcoming occurrence across every scheduled session.
+function nextScheduledOccurrence() {
+  const fromDateISO = todayISO();
+  let best = null;
+  STATE.progress.scheduledSessions.forEach((sched) => {
+    const occ = nextOccurrenceOf(sched, fromDateISO);
+    if (occ && (!best || occ < best.dateISO || (occ === best.dateISO && (sched.time || "") < (best.sched.time || "")))) {
+      best = { dateISO: occ, sched };
+    }
+  });
+  return best;
+}
+
 // Levels 1-10 cost 100 exp each; every 10 levels after that, the cost per
 // level in that tier rises by another 10% (compounding), so leveling up
 // gets progressively harder at higher levels.
@@ -283,6 +341,26 @@ function renderOverview() {
     </div>
   `));
 
+  const calSection = el(`<div class="section"><div class="section__title">Training Calendar</div></div>`);
+  const next = nextScheduledOccurrence();
+  const nextSession = next ? STATE.progress.trainingSessions.find((s) => s.id === next.sched.sessionId) : null;
+  if (next && nextSession) {
+    const nextLabel = new Date(next.dateISO + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+    const nextCard = el(`
+      <button class="next-session-card">
+        <div class="next-session-card__label">Next training session</div>
+        <div class="next-session-card__name">${nextSession.name}</div>
+        <div class="next-session-card__when">${nextLabel}${next.sched.time ? " · " + formatTimeLabel(next.sched.time) : ""}</div>
+      </button>
+    `);
+    nextCard.addEventListener("click", () => navigate(`/training/session/${nextSession.id}`));
+    calSection.appendChild(nextCard);
+  } else {
+    calSection.appendChild(el(`<div class="empty-state">No upcoming sessions scheduled. Build a training session and add it to your calendar.</div>`));
+  }
+  calSection.appendChild(renderCalendarWidget());
+  wrap.appendChild(calSection);
+
   const skillsSection = el(`<div class="section"><div class="section__title">Stats</div></div>`);
   skillsSection.appendChild(skillBar("Control", p.skills.control));
   skillsSection.appendChild(skillBar("Power", p.skills.power));
@@ -349,6 +427,132 @@ function skillBar(label, exp) {
       <div class="skill-bar__track"><div class="skill-bar__fill" style="width:${pct}%"></div></div>
     </div>
   `);
+}
+
+// ---------- Calendar ----------
+
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+
+function buildMonthGrid(year, month) {
+  const startWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+  const cells = [];
+  for (let i = startWeekday - 1; i >= 0; i--) {
+    cells.push({ day: daysInPrevMonth - i, inMonth: false, dateISO: null });
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ day: d, inMonth: true, dateISO: `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}` });
+  }
+  let trailing = 1;
+  while (cells.length % 7 !== 0) {
+    cells.push({ day: trailing++, inMonth: false, dateISO: null });
+  }
+  return cells;
+}
+
+function renderCalendarWidget() {
+  const now = new Date();
+  let viewYear = now.getFullYear();
+  let viewMonth = now.getMonth();
+  let selectedDateISO = null;
+
+  const wrap = el(`<div class="calendar-card"></div>`);
+  const header = el(`
+    <div class="calendar-card__header">
+      <button class="calendar-nav" id="cal-prev" type="button">‹</button>
+      <div class="calendar-card__title" id="cal-title"></div>
+      <button class="calendar-nav" id="cal-next" type="button">›</button>
+    </div>
+  `);
+  wrap.appendChild(header);
+  const grid = el(`<div class="calendar-grid"></div>`);
+  wrap.appendChild(grid);
+  const dayDetail = el(`<div class="calendar-day-detail" style="display:none"></div>`);
+  wrap.appendChild(dayDetail);
+
+  function paintDayDetail() {
+    if (!selectedDateISO) {
+      dayDetail.style.display = "none";
+      return;
+    }
+    dayDetail.style.display = "";
+    dayDetail.replaceChildren();
+    const label = new Date(selectedDateISO + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+    dayDetail.appendChild(el(`<div class="calendar-day-detail__title">${label}</div>`));
+    const occurring = STATE.progress.scheduledSessions.filter((sc) => scheduleOccursOn(sc, selectedDateISO));
+    if (occurring.length === 0) {
+      dayDetail.appendChild(el(`<div class="empty-state">No sessions scheduled.</div>`));
+    } else {
+      occurring.forEach((sc) => {
+        const session = STATE.progress.trainingSessions.find((s) => s.id === sc.sessionId);
+        if (!session) return;
+        const row = el(`
+          <button class="exercise-row">
+            <div class="exercise-row__main">
+              <div class="exercise-row__name">${session.name}</div>
+              <div class="exercise-row__meta">${sc.time ? formatTimeLabel(sc.time) : "All day"} · ${repeatLabel(sc.repeatDays)}</div>
+            </div>
+            <div class="exercise-row__arrow">→</div>
+          </button>
+        `);
+        row.addEventListener("click", () => navigate(`/training/session/${session.id}`));
+        dayDetail.appendChild(row);
+      });
+    }
+  }
+
+  function paint() {
+    header.querySelector("#cal-title").textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
+    grid.replaceChildren();
+    WEEKDAY_LABELS.forEach((w) => grid.appendChild(el(`<div class="calendar-grid__weekday">${w}</div>`)));
+    const todayStr = todayISO();
+    buildMonthGrid(viewYear, viewMonth).forEach((cell) => {
+      const isToday = cell.dateISO === todayStr;
+      const isSelected = cell.inMonth && cell.dateISO === selectedDateISO;
+      const hasEvent = cell.inMonth && STATE.progress.scheduledSessions.some((sc) => scheduleOccursOn(sc, cell.dateISO));
+      const dayEl = el(`
+        <button class="calendar-day ${cell.inMonth ? "" : "calendar-day--muted"} ${isToday ? "calendar-day--today" : ""} ${isSelected ? "calendar-day--selected" : ""}" ${cell.inMonth ? "" : "disabled"}>
+          <span>${cell.day}</span>
+          ${hasEvent ? '<span class="calendar-day__dot"></span>' : ""}
+        </button>
+      `);
+      if (cell.inMonth) {
+        dayEl.addEventListener("click", () => {
+          selectedDateISO = selectedDateISO === cell.dateISO ? null : cell.dateISO;
+          paint();
+          paintDayDetail();
+        });
+      }
+      grid.appendChild(dayEl);
+    });
+  }
+
+  header.querySelector("#cal-prev").addEventListener("click", () => {
+    viewMonth -= 1;
+    if (viewMonth < 0) {
+      viewMonth = 11;
+      viewYear -= 1;
+    }
+    selectedDateISO = null;
+    paint();
+    paintDayDetail();
+  });
+  header.querySelector("#cal-next").addEventListener("click", () => {
+    viewMonth += 1;
+    if (viewMonth > 11) {
+      viewMonth = 0;
+      viewYear += 1;
+    }
+    selectedDateISO = null;
+    paint();
+    paintDayDetail();
+  });
+
+  paint();
+  paintDayDetail();
+  return wrap;
 }
 
 // ---------- Training ----------
@@ -821,6 +1025,40 @@ function renderSessionPage(sessionId) {
   }
   paintClock();
   if (isRunning) clockInterval = setInterval(paintClock, 1000);
+
+  const scheduleSection = el(`<div class="section"><div class="section__title">Scheduled</div></div>`);
+  const scheduleList = el(`<div class="exercise-list"></div>`);
+  const schedules = STATE.progress.scheduledSessions.filter((s) => s.sessionId === sessionId);
+  if (schedules.length === 0) {
+    scheduleList.appendChild(el(`<div class="empty-state">Not scheduled yet.</div>`));
+  } else {
+    schedules.forEach((sched) => {
+      const dateLabel = new Date(sched.startDate + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+      const timeLabel = sched.time ? ` · ${formatTimeLabel(sched.time)}` : "";
+      const row = el(`
+        <button class="exercise-row">
+          <div class="exercise-row__main">
+            <div class="exercise-row__name">${dateLabel}${timeLabel}</div>
+            <div class="exercise-row__meta">${repeatLabel(sched.repeatDays)}</div>
+          </div>
+          <div class="exercise-row__arrow">✕</div>
+        </button>
+      `);
+      row.addEventListener("click", async () => {
+        const ok = await showConfirm("Remove this schedule?");
+        if (ok) {
+          updateState((s) => (s.progress.scheduledSessions = s.progress.scheduledSessions.filter((sc) => sc.id !== sched.id)));
+          render();
+        }
+      });
+      scheduleList.appendChild(row);
+    });
+  }
+  scheduleSection.appendChild(scheduleList);
+  const scheduleBtn = el(`<button class="add-drill-btn">+ Schedule This Session</button>`);
+  scheduleBtn.addEventListener("click", () => openScheduleForm(sessionId));
+  scheduleSection.appendChild(scheduleBtn);
+  wrap.appendChild(scheduleSection);
 
   const section = el(`<div class="section"><div class="section__title">Exercises in this session</div></div>`);
   const list = el(`<div class="exercise-list"></div>`);
@@ -1328,6 +1566,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (ok) closeTimer();
   });
   document.getElementById("drill-form-close").addEventListener("click", closeDrillForm);
+  document.getElementById("schedule-form-close").addEventListener("click", closeScheduleForm);
 });
 
 // ---------- Custom Drills ----------
@@ -1430,6 +1669,74 @@ function renderDrillForm(onCreated) {
     toast("Custom drill added");
     if (onCreated) onCreated(drill);
     else render();
+  });
+}
+
+// ---------- Scheduling ----------
+
+function openScheduleForm(sessionId) {
+  document.getElementById("schedule-form-overlay").classList.add("is-open");
+  renderScheduleForm(sessionId);
+}
+
+function closeScheduleForm() {
+  document.getElementById("schedule-form-overlay").classList.remove("is-open");
+}
+
+function renderScheduleForm(sessionId) {
+  const body = document.getElementById("schedule-form-body");
+  let repeatDays = "";
+
+  const view = el(`
+    <div class="drill-form">
+      <div class="drill-form__title">Schedule This Session</div>
+      <div class="field">
+        <label class="field__label">Date</label>
+        <input class="field__input" id="sched-date" type="date" value="${todayISO()}" />
+      </div>
+      <div class="field">
+        <label class="field__label">Time (optional)</label>
+        <input class="field__input" id="sched-time" type="time" />
+      </div>
+      <div class="field">
+        <label class="field__label">Repeat</label>
+        <div class="chip-row" id="sched-repeat-row"></div>
+      </div>
+      <button class="start-btn" id="sched-save">Add to Calendar</button>
+    </div>
+  `);
+  body.replaceChildren(view);
+
+  const repeatRow = view.querySelector("#sched-repeat-row");
+  REPEAT_OPTIONS.forEach((opt) => {
+    const chip = el(`<button class="chip ${opt.value === "" ? "is-active" : ""}" type="button">${opt.label}</button>`);
+    chip.addEventListener("click", () => {
+      repeatDays = opt.value;
+      repeatRow.querySelectorAll(".chip").forEach((c) => c.classList.remove("is-active"));
+      chip.classList.add("is-active");
+    });
+    repeatRow.appendChild(chip);
+  });
+
+  view.querySelector("#sched-save").addEventListener("click", () => {
+    const startDate = view.querySelector("#sched-date").value;
+    if (!startDate) {
+      toast("Pick a date");
+      return;
+    }
+    const time = view.querySelector("#sched-time").value || null;
+    const scheduled = {
+      id: `sched-${Date.now()}`,
+      sessionId,
+      startDate,
+      time,
+      repeatDays: repeatDays ? parseInt(repeatDays, 10) : null,
+      createdAt: Date.now(),
+    };
+    updateState((s) => s.progress.scheduledSessions.push(scheduled));
+    closeScheduleForm();
+    toast("Added to your calendar");
+    render();
   });
 }
 

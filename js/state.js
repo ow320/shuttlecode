@@ -33,6 +33,7 @@ function defaultState() {
       customDrills: [], // user-created drills, same shape as EXERCISES entries plus isCustom: true
       trainingSessions: [], // [{id, name, targetMinutes, exerciseIds: [...], createdAt}]
       activeSessionRun: null, // {sessionId, startedAt} | null — at most one running session at a time
+      scheduledSessions: [], // [{id, sessionId, startDate: "YYYY-MM-DD", time: "HH:MM"|null, repeatDays: number|null, createdAt}]
     },
   };
 }
