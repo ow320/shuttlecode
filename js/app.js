@@ -70,6 +70,33 @@ function daysBetween(isoA, isoB) {
   return Math.round((b - a) / 86400000);
 }
 
+// Levels 1-10 cost 100 exp each; every 10 levels after that, the cost per
+// level in that tier rises by another 10% (compounding), so leveling up
+// gets progressively harder at higher levels.
+const SKILL_BASE_EXP_PER_LEVEL = 100;
+const SKILL_TIER_SIZE = 10;
+const SKILL_TIER_GROWTH = 1.1;
+
+function computeSkillLevel(totalExp) {
+  let remaining = Math.max(0, totalExp || 0);
+  let tier = 0;
+  while (true) {
+    // Rounded to avoid floating-point drift (e.g. 100 * 1.1 !== 110 exactly)
+    // creating off-by-one glitches right at tier/level boundaries.
+    const costPerLevel = Math.round(SKILL_BASE_EXP_PER_LEVEL * Math.pow(SKILL_TIER_GROWTH, tier) * 100) / 100;
+    const tierCost = Math.round(costPerLevel * SKILL_TIER_SIZE * 100) / 100;
+    if (remaining < tierCost) {
+      const levelsIntoTier = Math.floor(remaining / costPerLevel);
+      const level = tier * SKILL_TIER_SIZE + levelsIntoTier + 1;
+      const expIntoLevel = remaining - levelsIntoTier * costPerLevel;
+      const pct = (expIntoLevel / costPerLevel) * 100;
+      return { level, pct, costPerLevel };
+    }
+    remaining -= tierCost;
+    tier++;
+  }
+}
+
 function workoutSummaryShort(ex) {
   const w = ex.workout;
   return w.mode === "time" ? `${w.sets}×${w.durationSeconds}s` : `${w.sets}×${w.shuttles}`;
@@ -312,9 +339,7 @@ function renderOverview() {
 }
 
 function skillBar(label, exp) {
-  const safeExp = Math.max(0, exp || 0);
-  const level = Math.floor(safeExp / 100) + 1;
-  const pct = safeExp % 100;
+  const { level, pct } = computeSkillLevel(exp);
   return el(`
     <div class="skill-bar">
       <div class="skill-bar__top">
