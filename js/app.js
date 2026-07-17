@@ -70,6 +70,13 @@ function daysBetween(isoA, isoB) {
   return Math.round((b - a) / 86400000);
 }
 
+function skillBumpFor(ex) {
+  if (ex.categoryId === "footwork") return "footwork";
+  if (ex.shotGroup && ex.shotGroup.includes("Smash")) return "smashPower";
+  if (ex.shotGroup && ex.shotGroup.includes("Net Shot")) return "netControl";
+  return null;
+}
+
 function relativeDateLabel(dateISO) {
   const diff = daysBetween(dateISO, todayISO());
   if (diff === 0) return "Today";
@@ -246,7 +253,55 @@ function renderTraining() {
     </div>
   `));
 
+  const searchWrap = el(`
+    <div class="search-bar">
+      <span class="search-bar__icon">🔍</span>
+      <input class="search-bar__input" type="text" placeholder="Search techniques…" id="training-search" />
+    </div>
+  `);
+  wrap.appendChild(searchWrap);
+
   const grid = el(`<div class="category-grid"></div>`);
+  const searchResults = el(`<div class="search-results" style="display:none"></div>`);
+
+  const input = searchWrap.querySelector("#training-search");
+  input.addEventListener("input", () => {
+    const query = input.value.trim().toLowerCase();
+    if (!query) {
+      grid.style.display = "";
+      searchResults.style.display = "none";
+      return;
+    }
+    grid.style.display = "none";
+    searchResults.style.display = "";
+    const matches = EXERCISES.filter((ex) => {
+      const haystack = `${ex.name} ${ex.shotGroup || ""} ${ex.shortLabel || ""}`.toLowerCase();
+      return haystack.includes(query);
+    });
+    searchResults.replaceChildren();
+    if (matches.length === 0) {
+      searchResults.appendChild(el(`<div class="empty-state">No techniques match "${query}".</div>`));
+    } else {
+      const list = el(`<div class="exercise-list"></div>`);
+      matches.slice(0, 60).forEach((ex) => {
+        const cat = getCategory(ex.categoryId);
+        const done = STATE.progress.completedExerciseIds.includes(ex.id);
+        const row = el(`
+          <button class="exercise-row">
+            <div class="exercise-row__main">
+              <div class="exercise-row__name">${cat.emoji} ${ex.name} ${done ? '<span class="badge-done">✓ done</span>' : ""}</div>
+              <div class="exercise-row__meta">${stars(ex.difficulty)} · ${cat.name}</div>
+            </div>
+            <div class="exercise-row__arrow">→</div>
+          </button>
+        `);
+        row.addEventListener("click", () => navigate(`/training/exercise/${ex.id}`));
+        list.appendChild(row);
+      });
+      searchResults.appendChild(list);
+    }
+  });
+
   CATEGORIES.forEach((cat) => {
     const count = getExercisesForCategory(cat.id).length;
     const card = el(`
@@ -261,6 +316,7 @@ function renderTraining() {
     grid.appendChild(card);
   });
   wrap.appendChild(grid);
+  wrap.appendChild(searchResults);
   return wrap;
 }
 
@@ -680,7 +736,7 @@ function finishWorkout(ctx) {
       if (localRating) s.progress.difficultyRatings[ctx.ex.id] = localRating;
       s.progress.lastExerciseId = ctx.ex.id;
 
-      const bump = { offensive: "smashPower", footwork: "footwork", netplay: "netControl" }[ctx.ex.categoryId];
+      const bump = skillBumpFor(ctx.ex);
       if (bump) s.progress.skills[bump] = Math.min(100, s.progress.skills[bump] + 1);
     });
     closeTimer();

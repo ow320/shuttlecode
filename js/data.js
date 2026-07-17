@@ -5,44 +5,28 @@ const PLACEHOLDER_VIDEO = "https://commondatastorage.googleapis.com/gtv-videos-b
 
 const CATEGORIES = [
   {
-    id: "fundamentals",
-    name: "Fundamentals",
+    id: "technique",
+    name: "Technique",
     emoji: "🏸",
-    tagline: "For beginners building proper technique",
+    tagline: "The full Shuttle Code shot library — every technique, position, and variation",
     gradient: "linear-gradient(135deg,#2b3350,#171b2b)",
-    calPerMin: 6,
-  },
-  {
-    id: "offensive",
-    name: "Offensive Techniques",
-    emoji: "⚡",
-    tagline: "Improve attacking ability",
-    gradient: "linear-gradient(135deg,#3a1f45,#1a1024)",
-    calPerMin: 11,
-  },
-  {
-    id: "defensive",
-    name: "Defensive Techniques",
-    emoji: "🛡",
-    tagline: "Improve reaction and recovery",
-    gradient: "linear-gradient(135deg,#123a3a,#0f1e24)",
     calPerMin: 9,
   },
   {
     id: "footwork",
-    name: "Footwork & Movement",
+    name: "Footwork",
     emoji: "🦶",
     tagline: "Improve speed and court coverage",
     gradient: "linear-gradient(135deg,#3a2a12,#241a0f)",
     calPerMin: 10,
   },
   {
-    id: "netplay",
-    name: "Net Play",
+    id: "drills",
+    name: "Drills",
     emoji: "🎯",
-    tagline: "Improve control around the net",
+    tagline: "Tactical drills and match-ready habits",
     gradient: "linear-gradient(135deg,#123245,#0f1c28)",
-    calPerMin: 7,
+    calPerMin: 8,
   },
   {
     id: "strength",
@@ -58,7 +42,7 @@ const EXERCISES = [
   // Fundamentals
   {
     id: "basic-grip",
-    categoryId: "fundamentals",
+    categoryId: "drills",
     name: "Basic Grip Technique",
     difficulty: 1,
     goal: "Build a relaxed, adaptable grip that supports both forehand and backhand shots.",
@@ -76,7 +60,7 @@ const EXERCISES = [
   // Forehand Clear
   {
     id: "forehand-clear-forehand-position-straight-early",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Forehand Clear",
     shortLabel: "Forehand Position, Straight, Early",
     name: "Forehand Clear — Forehand Position, Straight, Early",
@@ -98,7 +82,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-clear-forehand-position-straight-neutral",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Forehand Clear",
     shortLabel: "Forehand Position, Straight, Neutral",
     name: "Forehand Clear — Forehand Position, Straight, Neutral",
@@ -120,7 +104,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-clear-forehand-position-straight-late",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Forehand Clear",
     shortLabel: "Forehand Position, Straight, Late",
     name: "Forehand Clear — Forehand Position, Straight, Late",
@@ -142,7 +126,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-clear-forehand-position-cross-early",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Forehand Clear",
     shortLabel: "Forehand Position, Cross, Early",
     name: "Forehand Clear — Forehand Position, Cross, Early",
@@ -164,7 +148,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-clear-forehand-position-cross-neutral",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Forehand Clear",
     shortLabel: "Forehand Position, Cross, Neutral",
     name: "Forehand Clear — Forehand Position, Cross, Neutral",
@@ -186,7 +170,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-clear-forehand-position-cross-late",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Forehand Clear",
     shortLabel: "Forehand Position, Cross, Late",
     name: "Forehand Clear — Forehand Position, Cross, Late",
@@ -208,7 +192,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-clear-middle-position-forehand-position",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Forehand Clear",
     shortLabel: "Middle Position, Forehand Position",
     name: "Forehand Clear — Middle Position, Forehand Position",
@@ -230,7 +214,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-clear-middle-position-around-the-head-position",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Forehand Clear",
     shortLabel: "Middle Position, Around The Head Position",
     name: "Forehand Clear — Middle Position, Around The Head Position",
@@ -252,7 +236,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-clear-around-the-head-position-straight-early",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Forehand Clear",
     shortLabel: "Around The Head Position, Straight, Early",
     name: "Forehand Clear — Around The Head Position, Straight, Early",
@@ -274,7 +258,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-clear-around-the-head-position-straight-neutral",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Forehand Clear",
     shortLabel: "Around The Head Position, Straight, Neutral",
     name: "Forehand Clear — Around The Head Position, Straight, Neutral",
@@ -296,7 +280,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-clear-around-the-head-position-straight-late",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Forehand Clear",
     shortLabel: "Around The Head Position, Straight, Late",
     name: "Forehand Clear — Around The Head Position, Straight, Late",
@@ -318,7 +302,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-clear-around-the-head-position-cross-early",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Forehand Clear",
     shortLabel: "Around The Head Position, Cross, Early",
     name: "Forehand Clear — Around The Head Position, Cross, Early",
@@ -340,7 +324,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-clear-around-the-head-position-cross-neutral",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Forehand Clear",
     shortLabel: "Around The Head Position, Cross, Neutral",
     name: "Forehand Clear — Around The Head Position, Cross, Neutral",
@@ -362,7 +346,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-clear-around-the-head-position-cross-late",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Forehand Clear",
     shortLabel: "Around The Head Position, Cross, Late",
     name: "Forehand Clear — Around The Head Position, Cross, Late",
@@ -385,7 +369,7 @@ const EXERCISES = [
   // Backhand Clear
   {
     id: "backhand-clear-straight-early",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Backhand Clear",
     shortLabel: "Straight, Early",
     name: "Backhand Clear — Straight, Early",
@@ -407,7 +391,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-clear-straight-neutral",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Backhand Clear",
     shortLabel: "Straight, Neutral",
     name: "Backhand Clear — Straight, Neutral",
@@ -429,7 +413,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-clear-straight-late",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Backhand Clear",
     shortLabel: "Straight, Late",
     name: "Backhand Clear — Straight, Late",
@@ -451,7 +435,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-clear-cross-early",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Backhand Clear",
     shortLabel: "Cross, Early",
     name: "Backhand Clear — Cross, Early",
@@ -473,7 +457,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-clear-cross-neutral",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Backhand Clear",
     shortLabel: "Cross, Neutral",
     name: "Backhand Clear — Cross, Neutral",
@@ -495,7 +479,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-clear-cross-late",
-    categoryId: "fundamentals",
+    categoryId: "technique",
     shotGroup: "Backhand Clear",
     shortLabel: "Cross, Late",
     name: "Backhand Clear — Cross, Late",
@@ -517,7 +501,7 @@ const EXERCISES = [
   },
   {
     id: "serve-fundamentals",
-    categoryId: "fundamentals",
+    categoryId: "drills",
     name: "Serve Fundamentals",
     difficulty: 1,
     goal: "Groove a consistent, legal low serve and a controlled high serve.",
@@ -533,7 +517,7 @@ const EXERCISES = [
   },
   {
     id: "ready-position",
-    categoryId: "fundamentals",
+    categoryId: "drills",
     name: "Ready Position",
     difficulty: 1,
     goal: "Develop the balanced base stance that lets you react in any direction.",
@@ -549,7 +533,7 @@ const EXERCISES = [
   },
   {
     id: "basic-footwork",
-    categoryId: "fundamentals",
+    categoryId: "footwork",
     name: "Basic Footwork",
     difficulty: 2,
     goal: "Learn the core movement patterns to the four corners of the court.",
@@ -567,7 +551,7 @@ const EXERCISES = [
   // Forehand Drop Shot
   {
     id: "forehand-drop-shot-forehand-position-straight-slice",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drop Shot",
     shortLabel: "Forehand Position, Straight, Slice",
     name: "Forehand Drop Shot — Forehand Position, Straight, Slice",
@@ -589,7 +573,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-drop-shot-forehand-position-straight-basic",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drop Shot",
     shortLabel: "Forehand Position, Straight, Basic",
     name: "Forehand Drop Shot — Forehand Position, Straight, Basic",
@@ -611,7 +595,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-drop-shot-forehand-position-straight-reverse",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drop Shot",
     shortLabel: "Forehand Position, Straight, Reverse",
     name: "Forehand Drop Shot — Forehand Position, Straight, Reverse",
@@ -633,7 +617,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-drop-shot-forehand-position-cross-slice",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drop Shot",
     shortLabel: "Forehand Position, Cross, Slice",
     name: "Forehand Drop Shot — Forehand Position, Cross, Slice",
@@ -655,7 +639,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-drop-shot-forehand-position-cross-basic",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drop Shot",
     shortLabel: "Forehand Position, Cross, Basic",
     name: "Forehand Drop Shot — Forehand Position, Cross, Basic",
@@ -677,7 +661,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-drop-shot-middle-position-forehand-position",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drop Shot",
     shortLabel: "Middle Position, Forehand Position",
     name: "Forehand Drop Shot — Middle Position, Forehand Position",
@@ -699,7 +683,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-drop-shot-middle-position-around-the-head-position",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drop Shot",
     shortLabel: "Middle Position, Around The Head Position",
     name: "Forehand Drop Shot — Middle Position, Around The Head Position",
@@ -721,7 +705,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-drop-shot-around-the-head-position-straight-slice",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drop Shot",
     shortLabel: "Around The Head Position, Straight, Slice",
     name: "Forehand Drop Shot — Around The Head Position, Straight, Slice",
@@ -743,7 +727,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-drop-shot-around-the-head-position-straight-basic",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drop Shot",
     shortLabel: "Around The Head Position, Straight, Basic",
     name: "Forehand Drop Shot — Around The Head Position, Straight, Basic",
@@ -765,7 +749,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-drop-shot-around-the-head-position-straight-reverse",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drop Shot",
     shortLabel: "Around The Head Position, Straight, Reverse",
     name: "Forehand Drop Shot — Around The Head Position, Straight, Reverse",
@@ -787,7 +771,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-drop-shot-around-the-head-position-cross-slice",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drop Shot",
     shortLabel: "Around The Head Position, Cross, Slice",
     name: "Forehand Drop Shot — Around The Head Position, Cross, Slice",
@@ -809,7 +793,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-drop-shot-around-the-head-position-cross-basic",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drop Shot",
     shortLabel: "Around The Head Position, Cross, Basic",
     name: "Forehand Drop Shot — Around The Head Position, Cross, Basic",
@@ -832,7 +816,7 @@ const EXERCISES = [
   // Forehand Smash
   {
     id: "forehand-smash-forehand-position-straight-full-smash",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Smash",
     shortLabel: "Forehand Position, Straight, Full Smash",
     name: "Forehand Smash — Forehand Position, Straight, Full Smash",
@@ -854,7 +838,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-smash-forehand-position-straight-half-smash",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Smash",
     shortLabel: "Forehand Position, Straight, Half Smash",
     name: "Forehand Smash — Forehand Position, Straight, Half Smash",
@@ -876,7 +860,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-smash-forehand-position-straight-stick-smash",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Smash",
     shortLabel: "Forehand Position, Straight, Stick Smash",
     name: "Forehand Smash — Forehand Position, Straight, Stick Smash",
@@ -898,7 +882,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-smash-forehand-position-cross-full-smash",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Smash",
     shortLabel: "Forehand Position, Cross, Full Smash",
     name: "Forehand Smash — Forehand Position, Cross, Full Smash",
@@ -920,7 +904,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-smash-forehand-position-cross-half-smash",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Smash",
     shortLabel: "Forehand Position, Cross, Half Smash",
     name: "Forehand Smash — Forehand Position, Cross, Half Smash",
@@ -942,7 +926,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-smash-forehand-position-cross-stick-smash",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Smash",
     shortLabel: "Forehand Position, Cross, Stick Smash",
     name: "Forehand Smash — Forehand Position, Cross, Stick Smash",
@@ -964,7 +948,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-smash-middle-position-forehand-position",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Smash",
     shortLabel: "Middle Position, Forehand Position",
     name: "Forehand Smash — Middle Position, Forehand Position",
@@ -986,7 +970,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-smash-middle-position-around-the-head-position",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Smash",
     shortLabel: "Middle Position, Around The Head Position",
     name: "Forehand Smash — Middle Position, Around The Head Position",
@@ -1008,7 +992,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-smash-around-the-head-position-straight-full-smash",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Smash",
     shortLabel: "Around The Head Position, Straight, Full Smash",
     name: "Forehand Smash — Around The Head Position, Straight, Full Smash",
@@ -1030,7 +1014,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-smash-around-the-head-position-straight-half-smash",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Smash",
     shortLabel: "Around The Head Position, Straight, Half Smash",
     name: "Forehand Smash — Around The Head Position, Straight, Half Smash",
@@ -1052,7 +1036,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-smash-around-the-head-position-straight-stick-smash",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Smash",
     shortLabel: "Around The Head Position, Straight, Stick Smash",
     name: "Forehand Smash — Around The Head Position, Straight, Stick Smash",
@@ -1074,7 +1058,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-smash-around-the-head-position-cross-full-smash",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Smash",
     shortLabel: "Around The Head Position, Cross, Full Smash",
     name: "Forehand Smash — Around The Head Position, Cross, Full Smash",
@@ -1096,7 +1080,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-smash-around-the-head-position-cross-half-smash",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Smash",
     shortLabel: "Around The Head Position, Cross, Half Smash",
     name: "Forehand Smash — Around The Head Position, Cross, Half Smash",
@@ -1118,7 +1102,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-smash-around-the-head-position-cross-stick-smash",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Smash",
     shortLabel: "Around The Head Position, Cross, Stick Smash",
     name: "Forehand Smash — Around The Head Position, Cross, Stick Smash",
@@ -1141,7 +1125,7 @@ const EXERCISES = [
   // Backhand Drop Shot
   {
     id: "backhand-drop-shot-straight-slice",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Backhand Drop Shot",
     shortLabel: "Straight, Slice",
     name: "Backhand Drop Shot — Straight, Slice",
@@ -1163,7 +1147,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-drop-shot-straight-basic",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Backhand Drop Shot",
     shortLabel: "Straight, Basic",
     name: "Backhand Drop Shot — Straight, Basic",
@@ -1185,7 +1169,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-drop-shot-straight-reverse",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Backhand Drop Shot",
     shortLabel: "Straight, Reverse",
     name: "Backhand Drop Shot — Straight, Reverse",
@@ -1207,7 +1191,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-drop-shot-cross-slice",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Backhand Drop Shot",
     shortLabel: "Cross, Slice",
     name: "Backhand Drop Shot — Cross, Slice",
@@ -1229,7 +1213,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-drop-shot-cross-basic",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Backhand Drop Shot",
     shortLabel: "Cross, Basic",
     name: "Backhand Drop Shot — Cross, Basic",
@@ -1252,7 +1236,7 @@ const EXERCISES = [
   // Backhand Smash
   {
     id: "backhand-smash-straight-high",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Backhand Smash",
     shortLabel: "Straight, High",
     name: "Backhand Smash — Straight, High",
@@ -1274,7 +1258,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-smash-straight-low-drive",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Backhand Smash",
     shortLabel: "Straight, Low (Drive)",
     name: "Backhand Smash — Straight, Low (Drive)",
@@ -1296,7 +1280,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-smash-cross-high",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Backhand Smash",
     shortLabel: "Cross, High",
     name: "Backhand Smash — Cross, High",
@@ -1318,7 +1302,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-smash-cross-low-drive",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Backhand Smash",
     shortLabel: "Cross, Low (Drive)",
     name: "Backhand Smash — Cross, Low (Drive)",
@@ -1341,7 +1325,7 @@ const EXERCISES = [
   // Forehand Drive
   {
     id: "forehand-drive-straight-offensive",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drive",
     shortLabel: "Straight, Offensive",
     name: "Forehand Drive — Straight, Offensive",
@@ -1363,7 +1347,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-drive-straight-neutral",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drive",
     shortLabel: "Straight, Neutral",
     name: "Forehand Drive — Straight, Neutral",
@@ -1385,7 +1369,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-drive-straight-defensive",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drive",
     shortLabel: "Straight, Defensive",
     name: "Forehand Drive — Straight, Defensive",
@@ -1407,7 +1391,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-drive-cross-offensive",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drive",
     shortLabel: "Cross, Offensive",
     name: "Forehand Drive — Cross, Offensive",
@@ -1429,7 +1413,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-drive-cross-neutral",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drive",
     shortLabel: "Cross, Neutral",
     name: "Forehand Drive — Cross, Neutral",
@@ -1451,7 +1435,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-drive-cross-defensive",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Forehand Drive",
     shortLabel: "Cross, Defensive",
     name: "Forehand Drive — Cross, Defensive",
@@ -1474,7 +1458,7 @@ const EXERCISES = [
   // Backhand Drive
   {
     id: "backhand-drive-straight-offensive",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Backhand Drive",
     shortLabel: "Straight, Offensive",
     name: "Backhand Drive — Straight, Offensive",
@@ -1496,7 +1480,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-drive-straight-neutral",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Backhand Drive",
     shortLabel: "Straight, Neutral",
     name: "Backhand Drive — Straight, Neutral",
@@ -1518,7 +1502,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-drive-straight-defensive",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Backhand Drive",
     shortLabel: "Straight, Defensive",
     name: "Backhand Drive — Straight, Defensive",
@@ -1540,7 +1524,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-drive-cross-offensive",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Backhand Drive",
     shortLabel: "Cross, Offensive",
     name: "Backhand Drive — Cross, Offensive",
@@ -1562,7 +1546,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-drive-cross-neutral",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Backhand Drive",
     shortLabel: "Cross, Neutral",
     name: "Backhand Drive — Cross, Neutral",
@@ -1584,7 +1568,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-drive-cross-defensive",
-    categoryId: "offensive",
+    categoryId: "technique",
     shotGroup: "Backhand Drive",
     shortLabel: "Cross, Defensive",
     name: "Backhand Drive — Cross, Defensive",
@@ -1606,7 +1590,7 @@ const EXERCISES = [
   },
   {
     id: "fast-interceptions",
-    categoryId: "offensive",
+    categoryId: "drills",
     name: "Fast Interceptions",
     difficulty: 4,
     goal: "Cut off the opponent's drives and lifts before they clear the net.",
@@ -1622,7 +1606,7 @@ const EXERCISES = [
   },
   {
     id: "attack-positioning",
-    categoryId: "offensive",
+    categoryId: "drills",
     name: "Attack Positioning",
     difficulty: 3,
     goal: "Learn where to stand and move to keep constant offensive pressure.",
@@ -1640,7 +1624,7 @@ const EXERCISES = [
   // Forehand Defence
   {
     id: "forehand-defence-straight-early",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Forehand Defence",
     shortLabel: "Straight, Early",
     name: "Forehand Defence — Straight, Early",
@@ -1662,7 +1646,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-defence-straight-neutral",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Forehand Defence",
     shortLabel: "Straight, Neutral",
     name: "Forehand Defence — Straight, Neutral",
@@ -1684,7 +1668,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-defence-straight-late",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Forehand Defence",
     shortLabel: "Straight, Late",
     name: "Forehand Defence — Straight, Late",
@@ -1706,7 +1690,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-defence-cross-early",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Forehand Defence",
     shortLabel: "Cross, Early",
     name: "Forehand Defence — Cross, Early",
@@ -1728,7 +1712,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-defence-cross-neutral",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Forehand Defence",
     shortLabel: "Cross, Neutral",
     name: "Forehand Defence — Cross, Neutral",
@@ -1750,7 +1734,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-defence-cross-late",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Forehand Defence",
     shortLabel: "Cross, Late",
     name: "Forehand Defence — Cross, Late",
@@ -1773,7 +1757,7 @@ const EXERCISES = [
   // Backhand Defence
   {
     id: "backhand-defence-straight-early",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Backhand Defence",
     shortLabel: "Straight, Early",
     name: "Backhand Defence — Straight, Early",
@@ -1795,7 +1779,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-defence-straight-neutral",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Backhand Defence",
     shortLabel: "Straight, Neutral",
     name: "Backhand Defence — Straight, Neutral",
@@ -1817,7 +1801,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-defence-straight-late",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Backhand Defence",
     shortLabel: "Straight, Late",
     name: "Backhand Defence — Straight, Late",
@@ -1839,7 +1823,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-defence-cross-early",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Backhand Defence",
     shortLabel: "Cross, Early",
     name: "Backhand Defence — Cross, Early",
@@ -1861,7 +1845,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-defence-cross-neutral",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Backhand Defence",
     shortLabel: "Cross, Neutral",
     name: "Backhand Defence — Cross, Neutral",
@@ -1883,7 +1867,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-defence-cross-late",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Backhand Defence",
     shortLabel: "Cross, Late",
     name: "Backhand Defence — Cross, Late",
@@ -1906,7 +1890,7 @@ const EXERCISES = [
   // Forehand Lift
   {
     id: "forehand-lift-straight-early",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Forehand Lift",
     shortLabel: "Straight, Early",
     name: "Forehand Lift — Straight, Early",
@@ -1928,7 +1912,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-lift-straight-neutral",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Forehand Lift",
     shortLabel: "Straight, Neutral",
     name: "Forehand Lift — Straight, Neutral",
@@ -1950,7 +1934,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-lift-straight-late",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Forehand Lift",
     shortLabel: "Straight, Late",
     name: "Forehand Lift — Straight, Late",
@@ -1972,7 +1956,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-lift-cross-early",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Forehand Lift",
     shortLabel: "Cross, Early",
     name: "Forehand Lift — Cross, Early",
@@ -1994,7 +1978,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-lift-cross-neutral",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Forehand Lift",
     shortLabel: "Cross, Neutral",
     name: "Forehand Lift — Cross, Neutral",
@@ -2016,7 +2000,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-lift-cross-late",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Forehand Lift",
     shortLabel: "Cross, Late",
     name: "Forehand Lift — Cross, Late",
@@ -2039,7 +2023,7 @@ const EXERCISES = [
   // Backhand Lift
   {
     id: "backhand-lift-straight-early",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Backhand Lift",
     shortLabel: "Straight, Early",
     name: "Backhand Lift — Straight, Early",
@@ -2061,7 +2045,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-lift-straight-neutral",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Backhand Lift",
     shortLabel: "Straight, Neutral",
     name: "Backhand Lift — Straight, Neutral",
@@ -2083,7 +2067,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-lift-straight-late",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Backhand Lift",
     shortLabel: "Straight, Late",
     name: "Backhand Lift — Straight, Late",
@@ -2105,7 +2089,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-lift-cross-early",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Backhand Lift",
     shortLabel: "Cross, Early",
     name: "Backhand Lift — Cross, Early",
@@ -2127,7 +2111,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-lift-cross-neutral",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Backhand Lift",
     shortLabel: "Cross, Neutral",
     name: "Backhand Lift — Cross, Neutral",
@@ -2149,7 +2133,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-lift-cross-late",
-    categoryId: "defensive",
+    categoryId: "technique",
     shotGroup: "Backhand Lift",
     shortLabel: "Cross, Late",
     name: "Backhand Lift — Cross, Late",
@@ -2171,7 +2155,7 @@ const EXERCISES = [
   },
   {
     id: "counter-attacking",
-    categoryId: "defensive",
+    categoryId: "drills",
     name: "Counter Attacking",
     difficulty: 4,
     goal: "Turn a defensive return into your own attacking opportunity.",
@@ -2271,7 +2255,7 @@ const EXERCISES = [
   // Net Play
   {
     id: "net-kill",
-    categoryId: "netplay",
+    categoryId: "drills",
     name: "Net Kill",
     difficulty: 3,
     goal: "Finish rallies at the net with a sharp, downward kill shot.",
@@ -2289,7 +2273,7 @@ const EXERCISES = [
   // Forehand Net Shot
   {
     id: "forehand-net-shot-straight-out-to-in-spin",
-    categoryId: "netplay",
+    categoryId: "technique",
     shotGroup: "Forehand Net Shot",
     shortLabel: "Straight, Out-to-In Spin",
     name: "Forehand Net Shot — Straight, Out-to-In Spin",
@@ -2311,7 +2295,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-net-shot-straight-basic",
-    categoryId: "netplay",
+    categoryId: "technique",
     shotGroup: "Forehand Net Shot",
     shortLabel: "Straight, Basic",
     name: "Forehand Net Shot — Straight, Basic",
@@ -2333,7 +2317,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-net-shot-straight-in-to-out-spin",
-    categoryId: "netplay",
+    categoryId: "technique",
     shotGroup: "Forehand Net Shot",
     shortLabel: "Straight, In-to-Out Spin",
     name: "Forehand Net Shot — Straight, In-to-Out Spin",
@@ -2355,7 +2339,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-net-shot-cross-early",
-    categoryId: "netplay",
+    categoryId: "technique",
     shotGroup: "Forehand Net Shot",
     shortLabel: "Cross, Early",
     name: "Forehand Net Shot — Cross, Early",
@@ -2377,7 +2361,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-net-shot-cross-neutral",
-    categoryId: "netplay",
+    categoryId: "technique",
     shotGroup: "Forehand Net Shot",
     shortLabel: "Cross, Neutral",
     name: "Forehand Net Shot — Cross, Neutral",
@@ -2399,7 +2383,7 @@ const EXERCISES = [
   },
   {
     id: "forehand-net-shot-cross-late",
-    categoryId: "netplay",
+    categoryId: "technique",
     shotGroup: "Forehand Net Shot",
     shortLabel: "Cross, Late",
     name: "Forehand Net Shot — Cross, Late",
@@ -2422,7 +2406,7 @@ const EXERCISES = [
   // Backhand Net Shot
   {
     id: "backhand-net-shot-straight-out-to-in-spin",
-    categoryId: "netplay",
+    categoryId: "technique",
     shotGroup: "Backhand Net Shot",
     shortLabel: "Straight, Out-to-In Spin",
     name: "Backhand Net Shot — Straight, Out-to-In Spin",
@@ -2444,7 +2428,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-net-shot-straight-basic",
-    categoryId: "netplay",
+    categoryId: "technique",
     shotGroup: "Backhand Net Shot",
     shortLabel: "Straight, Basic",
     name: "Backhand Net Shot — Straight, Basic",
@@ -2466,7 +2450,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-net-shot-straight-in-to-out-spin",
-    categoryId: "netplay",
+    categoryId: "technique",
     shotGroup: "Backhand Net Shot",
     shortLabel: "Straight, In-to-Out Spin",
     name: "Backhand Net Shot — Straight, In-to-Out Spin",
@@ -2488,7 +2472,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-net-shot-cross-early",
-    categoryId: "netplay",
+    categoryId: "technique",
     shotGroup: "Backhand Net Shot",
     shortLabel: "Cross, Early",
     name: "Backhand Net Shot — Cross, Early",
@@ -2510,7 +2494,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-net-shot-cross-neutral",
-    categoryId: "netplay",
+    categoryId: "technique",
     shotGroup: "Backhand Net Shot",
     shortLabel: "Cross, Neutral",
     name: "Backhand Net Shot — Cross, Neutral",
@@ -2532,7 +2516,7 @@ const EXERCISES = [
   },
   {
     id: "backhand-net-shot-cross-late",
-    categoryId: "netplay",
+    categoryId: "technique",
     shotGroup: "Backhand Net Shot",
     shortLabel: "Cross, Late",
     name: "Backhand Net Shot — Cross, Late",
@@ -2554,7 +2538,7 @@ const EXERCISES = [
   },
   {
     id: "net-recovery",
-    categoryId: "netplay",
+    categoryId: "drills",
     name: "Net Recovery",
     difficulty: 2,
     goal: "Move to and from the net efficiently without wasting steps.",
