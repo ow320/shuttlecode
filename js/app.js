@@ -1070,6 +1070,44 @@ function renderSessionBuilder() {
   });
   wrap.appendChild(createExerciseBtn);
 
+  const repeatSection = el(`<div class="section"><div class="section__title">Repeat</div></div>`);
+  let scheduleEnabled = false;
+  let repeatDays = "";
+  const scheduleFields = el(`
+    <div style="display:none">
+      <div class="field">
+        <label class="field__label">Start date</label>
+        <input class="field__input" id="session-sched-date" type="date" value="${todayISO()}" />
+      </div>
+      <div class="field">
+        <label class="field__label">Time (optional)</label>
+        <input class="field__input" id="session-sched-time" type="time" />
+      </div>
+      <div class="field">
+        <label class="field__label">Repeat</label>
+        <div class="chip-row" id="session-sched-repeat-row"></div>
+      </div>
+    </div>
+  `);
+  const scheduleToggle = toggleRow("Schedule this session", false, (val) => {
+    scheduleEnabled = val;
+    scheduleFields.style.display = val ? "" : "none";
+  });
+  repeatSection.appendChild(scheduleToggle);
+  repeatSection.appendChild(scheduleFields);
+
+  const repeatRow = scheduleFields.querySelector("#session-sched-repeat-row");
+  REPEAT_OPTIONS.forEach((opt) => {
+    const chip = el(`<button class="chip ${opt.value === "" ? "is-active" : ""}" type="button">${opt.label}</button>`);
+    chip.addEventListener("click", () => {
+      repeatDays = opt.value;
+      repeatRow.querySelectorAll(".chip").forEach((c) => c.classList.remove("is-active"));
+      chip.classList.add("is-active");
+    });
+    repeatRow.appendChild(chip);
+  });
+  wrap.appendChild(repeatSection);
+
   const createBtn = el(`<button class="start-btn">Create Session</button>`);
   createBtn.addEventListener("click", () => {
     const name = wrap.querySelector("#session-name").value.trim();
@@ -1081,6 +1119,10 @@ function renderSessionBuilder() {
       toast("Add at least one exercise to the session");
       return;
     }
+    if (scheduleEnabled && !scheduleFields.querySelector("#session-sched-date").value) {
+      toast("Pick a start date for the schedule");
+      return;
+    }
     const targetMinutes = Math.max(10, parseInt(wrap.querySelector("#session-target").value, 10) || 120);
     const session = {
       id: `session-${slugify(name)}-${Date.now()}`,
@@ -1089,8 +1131,20 @@ function renderSessionBuilder() {
       exerciseIds: [...selectedIds],
       createdAt: Date.now(),
     };
-    updateState((s) => s.progress.trainingSessions.push(session));
-    toast("Training session created");
+    updateState((s) => {
+      s.progress.trainingSessions.push(session);
+      if (scheduleEnabled) {
+        s.progress.scheduledSessions.push({
+          id: `sched-${Date.now()}`,
+          sessionId: session.id,
+          startDate: scheduleFields.querySelector("#session-sched-date").value,
+          time: scheduleFields.querySelector("#session-sched-time").value || null,
+          repeatDays: repeatDays ? parseInt(repeatDays, 10) : null,
+          createdAt: Date.now(),
+        });
+      }
+    });
+    toast(scheduleEnabled ? "Training session created and scheduled" : "Training session created");
     navigate(`/training/session/${session.id}`);
   });
   wrap.appendChild(createBtn);
